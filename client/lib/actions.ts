@@ -84,6 +84,7 @@ export async function addFixed(_: ActionResult | null, form: FormData): Promise<
 
 export async function editFixed(_: ActionResult | null, form: FormData): Promise<ActionResult> {
   const id = Number(form.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: "Charge introuvable : recharge la page." };
   const f = readFixed(form);
   if (typeof f === "string") return { ok: false, error: f };
   await updateFixedItem(id, f.nom, f.categorie, f.montant);
