@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Martian_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 
 import { Rail } from "@/components/Rail";
 import { monthKey } from "@/lib/finance";
@@ -24,11 +25,13 @@ export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { salaire, month } = await loadMonth(monthKey(new Date()));
+  // Même nom de cookie que dans components/Rail.tsx.
+  const railCollapsed = (await cookies()).get("sw-rail")?.value === "collapsed";
   return (
     <html lang="fr" className={`${archivo.variable} ${martian.variable}`}>
       <body>
         <div className="shell">
-          <Rail reste={salaire > 0 ? month.reste : null} />
+          <Rail reste={salaire > 0 ? month.reste : null} initialCollapsed={railCollapsed} />
           <main className="main">{children}</main>
         </div>
       </body>
