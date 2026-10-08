@@ -54,6 +54,11 @@ export function parseDevise(v: unknown): Devise {
 /** Remplace un montant quand l'utilisateur masque son budget. */
 export const MASQUE = "****";
 
+/** money(), ou **** si les montants sont masqués. */
+export function moneyOr(masque: boolean, n: number): string {
+  return masque ? MASQUE : money(n);
+}
+
 const euro = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const euroRound = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 

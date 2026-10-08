@@ -1,9 +1,9 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-import { daysInMonth, money, moneyRound, type MonthKey, type MonthReste } from "@/lib/finance";
+import { daysInMonth, MASQUE, money, moneyOr, moneyRound, type MonthKey, type MonthReste } from "@/lib/finance";
 
-function Trace({ month, data, symbole }: { month: MonthKey; data: MonthReste; symbole: string }) {
+function Trace({ month, data, symbole, masque }: { month: MonthKey; data: MonthReste; symbole: string; masque: boolean }) {
   const W = 360;
   const H = 170;
   const PAD_L = 48;
@@ -29,7 +29,9 @@ function Trace({ month, data, symbole }: { month: MonthKey; data: MonthReste; sy
   // Projection : dépenser exactement le « par jour » amène à 0 le dernier jour.
   const showProj = last && data.joursRestants > 1 && data.reste > 0;
 
-  const label = data.trace.length
+  const label = masque
+    ? "Évolution du reste (montants masqués)."
+    : data.trace.length
     ? `Évolution du reste : ${money(data.ouverture)} ${symbole} au 1er, ${money(data.reste)} ${symbole} aujourd'hui.`
     : "Le mois n'a pas encore commencé.";
 
@@ -45,7 +47,7 @@ function Trace({ month, data, symbole }: { month: MonthKey; data: MonthReste; sy
       {last && <circle className="dot" cx={last[0]} cy={last[1]} r={3.5} />}
       {crossPoint && <circle className="cross" cx={x(crossPoint.day)} cy={y(crossPoint.reste)} r={4} />}
       <text x={PAD_L - 6} y={y(hi) + 4} textAnchor="end">
-        {moneyRound(hi)}
+        {masque ? MASQUE : moneyRound(hi)}
       </text>
       <text x={PAD_L - 6} y={y(0) + 4} textAnchor="end">
         0
@@ -70,11 +72,13 @@ export function RestePlate({
   data,
   isCurrent,
   symbole,
+  masque,
 }: {
   month: MonthKey;
   data: MonthReste;
   isCurrent: boolean;
   symbole: string;
+  masque: boolean;
 }) {
   if (data.salaire <= 0) {
     return (
@@ -97,7 +101,9 @@ export function RestePlate({
     );
   }
 
-  const negative = data.reste < 0;
+  // Masqué : on ne trahit pas non plus le signe du reste.
+  const negative = !masque && data.reste < 0;
+  const show = (n: number) => moneyOr(masque, n);
   const perDay = data.joursRestants > 0 ? data.reste / data.joursRestants : null;
 
   return (
@@ -105,7 +111,7 @@ export function RestePlate({
       <div>
         <div className="plate-figure">
           <span className="num vfd-refresh" key={data.reste}>
-            {money(data.reste)}
+            {show(data.reste)}
           </span>
           <span className="unit">{symbole}</span>
           <h2 id="reste-title" className="caption">
@@ -122,21 +128,21 @@ export function RestePlate({
         <div className="equation" aria-label="Détail du calcul">
           <div>
             <span>Salaire</span>
-            <span className="num">{money(data.salaire)}</span>
+            <span className="num">{show(data.salaire)}</span>
           </div>
           <div>
             <span>− Charges fixes</span>
-            <span className="num">{money(data.charges)}</span>
+            <span className="num">{show(data.charges)}</span>
           </div>
           {data.revenus > 0 && (
             <div>
               <span>+ Autres revenus</span>
-              <span className="num">{money(data.revenus)}</span>
+              <span className="num">{show(data.revenus)}</span>
             </div>
           )}
           <div>
             <span>− Dépenses du mois</span>
-            <span className="num">{money(data.depenses)}</span>
+            <span className="num">{show(data.depenses)}</span>
           </div>
         </div>
       </div>
@@ -145,13 +151,13 @@ export function RestePlate({
         {perDay !== null && (
           <div className="per-day">
             <span>
-              {perDay >= 0 ? "Soit par jour, sur " : "Dépassement par jour restant, sur "}
+              {masque || perDay >= 0 ? "Soit par jour, sur " : "Dépassement par jour restant, sur "}
               {data.joursRestants} {data.joursRestants > 1 ? "jours" : "jour"}
             </span>
-            <span className="num">{money(Math.abs(perDay))} {symbole}</span>
+            <span className="num">{show(Math.abs(perDay))} {symbole}</span>
           </div>
         )}
-        <Trace month={month} data={data} symbole={symbole} />
+        <Trace month={month} data={data} symbole={symbole} masque={masque} />
       </div>
     </section>
   );

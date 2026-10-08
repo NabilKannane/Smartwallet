@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { money } from "@/lib/finance";
+import { moneyOr } from "@/lib/finance";
 
 import { Cur } from "./Currency";
 
@@ -24,7 +24,7 @@ const WIDTH = { open: 232, collapsed: 76 };
 const spring = { type: "spring", stiffness: 420, damping: 38 } as const;
 const fade = { duration: 0.16 };
 
-export function Rail({ reste, initialCollapsed }: { reste: number | null; initialCollapsed: boolean }) {
+export function Rail({ reste, initialCollapsed, masque }: { reste: number | null; initialCollapsed: boolean; masque: boolean }) {
   const pathname = usePathname();
   const onHome = pathname === "/";
   const [collapsed, setCollapsed] = useState(initialCollapsed);
@@ -95,9 +95,9 @@ export function Rail({ reste, initialCollapsed }: { reste: number | null; initia
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8, transition: fade }}
             >
-              <Link href="/" className={`rail-readout${reste < 0 ? " is-negative" : ""}`}>
+              <Link href="/" className={`rail-readout${!masque && reste < 0 ? " is-negative" : ""}`}>
                 <span>Reste ce mois</span>
-                <span className="num">{money(reste)} <Cur /></span>
+                <span className="num">{moneyOr(masque, reste)} <Cur /></span>
               </Link>
             </motion.div>
           )}

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 
 import { DeviseForm, FixedTable, MasqueToggle, SalaryForm } from "@/components/BudgetForms";
 import { getDevise, getSalary, listFixedItems } from "@/lib/db";
-import { DEVISES, MASQUE, money } from "@/lib/finance";
+import { DEVISES, moneyOr } from "@/lib/finance";
+import { isMasque } from "@/lib/masque";
 
 export const metadata: Metadata = { title: "Budget" };
 
@@ -11,9 +11,8 @@ export default async function Budget() {
   const [salaire, fixed, devise] = await Promise.all([getSalary(), listFixedItems(), getDevise()]);
   const charges = fixed.reduce((s, f) => s + f.montant, 0);
   const ouverture = salaire - charges;
-  // Même nom de cookie que dans components/BudgetForms.tsx.
-  const masque = (await cookies()).get("sw-budget-masque")?.value === "1";
-  const show = (n: number) => (masque ? MASQUE : money(n));
+  const masque = await isMasque();
+  const show = (n: number) => moneyOr(masque, n);
 
   return (
     <>
