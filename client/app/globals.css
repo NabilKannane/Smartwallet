@@ -1,0 +1,57 @@
+/* SmartWallet — point d'entrée Tailwind v4.
+   Le design existant vit dans legacy.css, chargé dans le layer "components" :
+   les classes Tailwind (layer "utilities") passent toujours par-dessus.
+   Pas de preflight : legacy.css s'appuie sur les styles par défaut du navigateur. */
+
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "./legacy.css" layer(components);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* La palette « Ticket de caisse » en classes Tailwind (bg-rail, text-ink, border-rule…).
+   On retire la palette par défaut pour ne garder que celle du produit. */
+@theme inline {
+  --color-*: initial;
+  --color-white: #fff;
+  --color-black: #000;
+
+  --color-rail: var(--rail);
+  --color-rail-2: var(--rail-2);
+  --color-rail-ink: var(--rail-ink);
+  --color-rail-muted: var(--rail-muted);
+
+  --color-paper: var(--paper);
+  --color-paper-sunk: var(--paper-sunk);
+  --color-paper-hi: var(--paper-hi);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+
+  --color-red: var(--red);
+  --color-red-wash: var(--red-wash);
+  --color-gain: var(--gain);
+
+  --color-plate: var(--plate);
+  --color-plate-2: var(--plate-2);
+  --color-vfd: var(--vfd);
+  --color-vfd-dim: var(--vfd-dim);
+  --color-vfd-red: var(--vfd-red);
+  --color-vfd-amber: var(--vfd-amber);
+
+  --color-focus: var(--focus);
+
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
+
+  /* Échelle typographique du produit : text-step--1 … text-step-3 */
+  --text-step--1: var(--step--1);
+  --text-step-0: var(--step-0);
+  --text-step-1: var(--step-1);
+  --text-step-2: var(--step-2);
+  --text-step-3: var(--step-3);
+
+  --radius-ticket: var(--radius);
+}
