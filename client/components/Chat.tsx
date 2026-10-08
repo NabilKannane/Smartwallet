@@ -40,6 +40,7 @@ export function Chat({ suggestions }: { suggestions: string[] }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [restored, setRestored] = useState(false);
   const sessionId = useSessionId();
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -51,16 +52,20 @@ export function Chat({ suggestions }: { suggestions: string[] }) {
     } catch {
       /* rien à restaurer */
     }
+    setRestored(true);
   }, []);
 
   useEffect(() => {
-    try {
-      sessionStorage.setItem(STORE, JSON.stringify(msgs));
-    } catch {
-      /* ignore */
+    // Avant la restauration, msgs vaut [] : l'écrire effacerait la conversation sauvegardée.
+    if (restored) {
+      try {
+        sessionStorage.setItem(STORE, JSON.stringify(msgs));
+      } catch {
+        /* ignore */
+      }
     }
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [msgs, busy]);
+  }, [msgs, busy, restored]);
 
   const ask = useCallback(
     async (question: string, retry = false) => {
