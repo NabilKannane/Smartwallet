@@ -4,8 +4,8 @@ import Link from "next/link";
 import { CategoryPlate } from "@/components/CategoryPlate";
 import { MonthTape } from "@/components/MonthTape";
 import { RestePlate } from "@/components/RestePlate";
-import { monthBounds } from "@/lib/db";
-import { money, monthKey, monthLabel, monthRange, parseMonth, shiftMonth, todayISO } from "@/lib/finance";
+import { getDevise, monthBounds } from "@/lib/db";
+import { DEVISES, money, monthKey, monthLabel, monthRange, parseMonth, shiftMonth, todayISO } from "@/lib/finance";
 import { lastVerdict, loadMonth } from "@/lib/summary";
 
 const relative = new Intl.RelativeTimeFormat("fr-FR", { numeric: "auto" });
@@ -20,10 +20,11 @@ export default async function CeMois({ searchParams }: { searchParams: Promise<{
   const current = monthKey(new Date());
   const month = parseMonth(m);
   const isCurrent = month === current;
-  const [{ salaire, fixed, charges, month: data }, { first }, avis] = await Promise.all([
+  const [{ salaire, fixed, charges, month: data }, { first }, avis, devise] = await Promise.all([
     loadMonth(month),
     monthBounds(),
     lastVerdict(),
+    getDevise(),
   ]);
   const firstMonth = first ? first.slice(0, 7) : current;
   const canPrev = month > firstMonth;
@@ -65,7 +66,7 @@ export default async function CeMois({ searchParams }: { searchParams: Promise<{
         </nav>
       </header>
 
-      <RestePlate month={month} data={data} isCurrent={isCurrent} />
+      <RestePlate month={month} data={data} isCurrent={isCurrent} symbole={DEVISES[devise].symbole} />
 
       <div className="month-grid">
         <MonthTape
@@ -104,7 +105,7 @@ export default async function CeMois({ searchParams }: { searchParams: Promise<{
                 </ul>
                 <div className="total">
                   <span>Total / mois</span>
-                  <span className="num">{money(charges)} €</span>
+                  <span className="num">{money(charges)} {DEVISES[devise].symbole}</span>
                 </div>
               </>
             )}

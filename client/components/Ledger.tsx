@@ -7,6 +7,7 @@ import type { Transaction } from "@/lib/db";
 import { money, signed } from "@/lib/finance";
 
 import { CategoryPlate } from "./CategoryPlate";
+import { Cur } from "./Currency";
 
 type Key = "date" | "montant";
 
@@ -68,7 +69,7 @@ export function Ledger({ rows }: { rows: Transaction[] }) {
       </table>
       <p className="scale-note">
         {rows.length} {rows.length > 1 ? "lignes" : "ligne"} · total dépenses{" "}
-        <span className="num">{money(rows.filter((r) => r.type === "Dépense").reduce((s, r) => s + r.montant, 0))} €</span>
+        <span className="num">{money(rows.filter((r) => r.type === "Dépense").reduce((s, r) => s + r.montant, 0))} <Cur /></span>
       </p>
     </div>
   );

@@ -6,6 +6,8 @@ import Markdown from "react-markdown";
 
 import type { Verdict } from "@/lib/finance";
 
+import { useSymbole } from "./Currency";
+
 type Msg =
   | { role: "user"; text: string }
   | { role: "assistant"; text: string; verdict: Verdict | null }
@@ -38,6 +40,7 @@ function useSessionId() {
 
 export function Chat({ suggestions }: { suggestions: string[] }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
+  const symbole = useSymbole();
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [restored, setRestored] = useState(false);
@@ -187,7 +190,7 @@ export function Chat({ suggestions }: { suggestions: string[] }) {
                 ask(draft);
               }
             }}
-            placeholder="Ex. : Est-ce que je peux m’acheter un ordinateur à 900 € ?"
+            placeholder={`Ex. : Est-ce que je peux m’acheter un ordinateur à 900 ${symbole} ?`}
           />
         </label>
         <button className="btn btn-primary" type="submit" disabled={busy || !draft.trim()}>

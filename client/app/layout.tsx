@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Martian_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 
+import { DeviseProvider } from "@/components/Currency";
 import { Rail } from "@/components/Rail";
+import { getDevise } from "@/lib/db";
 import { monthKey } from "@/lib/finance";
 import { loadMonth } from "@/lib/summary";
 
@@ -24,16 +26,18 @@ export const viewport: Viewport = {
 export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { salaire, month } = await loadMonth(monthKey(new Date()));
+  const [{ salaire, month }, devise] = await Promise.all([loadMonth(monthKey(new Date())), getDevise()]);
   // Même nom de cookie que dans components/Rail.tsx.
   const railCollapsed = (await cookies()).get("sw-rail")?.value === "collapsed";
   return (
     <html lang="fr" className={`${archivo.variable} ${martian.variable}`}>
       <body>
-        <div className="shell">
-          <Rail reste={salaire > 0 ? month.reste : null} initialCollapsed={railCollapsed} />
-          <main className="main">{children}</main>
-        </div>
+        <DeviseProvider devise={devise}>
+          <div className="shell">
+            <Rail reste={salaire > 0 ? month.reste : null} initialCollapsed={railCollapsed} />
+            <main className="main">{children}</main>
+          </div>
+        </DeviseProvider>
       </body>
     </html>
   );

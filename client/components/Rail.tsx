@@ -8,6 +8,8 @@ import { useState } from "react";
 
 import { money } from "@/lib/finance";
 
+import { Cur } from "./Currency";
+
 const LINKS = [
   { href: "/", label: "Ce mois", icon: ReceiptText },
   { href: "/historique", label: "Historique", icon: ChartColumn },
@@ -95,7 +97,7 @@ export function Rail({ reste, initialCollapsed }: { reste: number | null; initia
             >
               <Link href="/" className={`rail-readout${reste < 0 ? " is-negative" : ""}`}>
                 <span>Reste ce mois</span>
-                <span className="num">{money(reste)} €</span>
+                <span className="num">{money(reste)} <Cur /></span>
               </Link>
             </motion.div>
           )}

@@ -2,6 +2,8 @@ import "server-only";
 
 import { neon } from "@neondatabase/serverless";
 
+import { parseDevise, type Devise } from "./finance";
+
 /** Base Postgres hébergée sur Neon. Même schéma que l'ancienne base SQLite de l'app Streamlit. */
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL manquant : ajoute la chaîne de connexion Neon dans client/.env.local");
@@ -147,4 +149,8 @@ export async function setSetting(key: string, value: string) {
 export async function getSalary(): Promise<number> {
   const v = parseFloat(await getSetting("salaire_mensuel", "0"));
   return Number.isFinite(v) ? v : 0;
+}
+
+export async function getDevise(): Promise<Devise> {
+  return parseDevise(await getSetting("devise", "EUR"));
 }

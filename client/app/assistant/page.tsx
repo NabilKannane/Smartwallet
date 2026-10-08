@@ -2,17 +2,23 @@ import { ChevronDown } from "lucide-react";
 import type { Metadata } from "next";
 
 import { Chat, ServiceStatus } from "@/components/Chat";
-import { money, monthKey } from "@/lib/finance";
+import { getDevise } from "@/lib/db";
+import { DEVISES, money, monthKey } from "@/lib/finance";
 import { currentContext, loadMonth } from "@/lib/summary";
 
 export const metadata: Metadata = { title: "Assistant" };
 
 export default async function Assistant() {
-  const [{ salaire, month }, context] = await Promise.all([loadMonth(monthKey(new Date())), currentContext()]);
+  const [{ salaire, month }, context, devise] = await Promise.all([
+    loadMonth(monthKey(new Date())),
+    currentContext(),
+    getDevise(),
+  ]);
+  const symbole = DEVISES[devise].symbole;
   const r = Math.max(0, month.reste);
   const suggestions = [
-    "Est-ce que je peux m’acheter un ordinateur à 900 € ?",
-    `Un week-end à ${Math.max(150, Math.round((r * 0.15) / 50) * 50)} € ce mois-ci, c’est raisonnable ?`,
+    `Est-ce que je peux m’acheter un ordinateur à 900 ${symbole} ?`,
+    `Un week-end à ${Math.max(150, Math.round((r * 0.15) / 50) * 50)} ${symbole} ce mois-ci, c’est raisonnable ?`,
     "Combien je peux mettre de côté ce mois-ci sans me priver ?",
   ];
 
@@ -34,7 +40,7 @@ export default async function Assistant() {
             <div className="section-head">
               <h2 id="ctx-reste">Reste ce mois</h2>
               <span className={`num font-bold${month.reste < 0 ? " text-red" : ""}`}>
-                {salaire > 0 ? `${money(month.reste)} €` : "—"}
+                {salaire > 0 ? `${money(month.reste)} ${symbole}` : "—"}
               </span>
             </div>
             <p className="form-note">C’est le chiffre que l’assistant prend comme point de départ.</p>

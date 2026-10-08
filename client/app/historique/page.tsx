@@ -3,10 +3,11 @@ import Link from "next/link";
 
 import { CategoryPlate } from "@/components/CategoryPlate";
 import { Ledger } from "@/components/Ledger";
-import { listTransactions } from "@/lib/db";
+import { getDevise, listTransactions } from "@/lib/db";
 import {
   CATEGORIES_DEPENSE,
   CATEGORIES_REVENU,
+  DEVISES,
   money,
   moneyRound,
   monthKey,
@@ -32,7 +33,17 @@ function monthsBetween(from: MonthKey, to: MonthKey): MonthKey[] {
 }
 
 /** Barres mois par mois, toujours sur la même échelle (max de tout l'historique). */
-function MonthBars({ months, totals, scaleMax }: { months: MonthKey[]; totals: Map<MonthKey, { in: number; out: number }>; scaleMax: number }) {
+function MonthBars({
+  months,
+  totals,
+  scaleMax,
+  symbole,
+}: {
+  months: MonthKey[];
+  totals: Map<MonthKey, { in: number; out: number }>;
+  scaleMax: number;
+  symbole: string;
+}) {
   const W = 640;
   const H = 220;
   const L = 52;
@@ -45,7 +56,7 @@ function MonthBars({ months, totals, scaleMax }: { months: MonthKey[]; totals: M
   const label = months
     .map((m) => {
       const t = totals.get(m) ?? { in: 0, out: 0 };
-      return `${monthLabel(m)} : dépenses ${money(t.out)} €, revenus ${money(t.in)} €`;
+      return `${monthLabel(m)} : dépenses ${money(t.out)} ${symbole}, revenus ${money(t.in)} ${symbole}`;
     })
     .join(" ; ");
 
@@ -64,7 +75,7 @@ function MonthBars({ months, totals, scaleMax }: { months: MonthKey[]; totals: M
         const cx = L + colW * i + colW / 2;
         return (
           <g key={m} className="col">
-            <title>{`${monthLabel(m)} — dépenses ${money(t.out)} €, revenus ${money(t.in)} €`}</title>
+            <title>{`${monthLabel(m)} — dépenses ${money(t.out)} ${symbole}, revenus ${money(t.in)} ${symbole}`}</title>
             <rect className="b-out" x={cx - barW - 1} width={barW} y={y(t.out)} height={y(0) - y(t.out)} rx={1.5} />
             <rect className="b-in" x={cx + 1} width={barW} y={y(t.in)} height={y(0) - y(t.in)} rx={1.5} />
             {(months.length <= 12 || i % 2 === 0) && (
@@ -81,7 +92,8 @@ function MonthBars({ months, totals, scaleMax }: { months: MonthKey[]; totals: M
 
 export default async function Historique({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
-  const all = await listTransactions();
+  const [all, devise] = await Promise.all([listTransactions(), getDevise()]);
+  const symbole = DEVISES[devise].symbole;
   const current = monthKey(new Date());
 
   if (all.length === 0) {
@@ -225,16 +237,16 @@ export default async function Historique({ searchParams }: { searchParams: SP })
                   </span>
                 </div>
               </div>
-              <MonthBars months={visibleMonths} totals={totals} scaleMax={scaleMax} />
+              <MonthBars symbole={symbole} months={visibleMonths} totals={totals} scaleMax={scaleMax} />
               <p className="scale-note">
-                Échelle fixe de 0 à <span className="num">{moneyRound(scaleMax)} €</span>, calée sur ton plus gros mois.
+                Échelle fixe de 0 à <span className="num">{moneyRound(scaleMax)} {symbole}</span>, calée sur ton plus gros mois.
               </p>
             </section>
 
             <section className="panel" aria-labelledby="cat-title">
               <div className="section-head">
                 <h2 id="cat-title">Par catégorie</h2>
-                <span className="num form-note">{money(catTotal)} €</span>
+                <span className="num form-note">{money(catTotal)} {symbole}</span>
               </div>
               {catList.length === 0 ? (
                 <p className="form-note">Aucune dépense dans cette sélection.</p>

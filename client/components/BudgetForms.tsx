@@ -3,12 +3,13 @@
 import { Check, Plus, Trash2 } from "lucide-react";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 
-import { addFixed, deleteFixed, editFixed, saveSalary, type ActionResult } from "@/lib/actions";
+import { addFixed, deleteFixed, editFixed, saveDevise, saveSalary, type ActionResult } from "@/lib/actions";
 import type { FixedItem } from "@/lib/db";
-import { CATEGORIES_FIXES } from "@/lib/finance";
+import { CATEGORIES_FIXES, DEVISES, type Devise } from "@/lib/finance";
 import { submitKeepingValues } from "@/lib/form";
 
 import { CategoryPlate } from "./CategoryPlate";
+import { useDevise, useSymbole } from "./Currency";
 
 const amountProps = {
   inputMode: "decimal" as const,
@@ -21,7 +22,35 @@ function toInput(n: number) {
   return n.toFixed(2).replace(".", ",");
 }
 
+export function DeviseForm() {
+  const devise = useDevise();
+  const [choix, setChoix] = useState(devise);
+  const [pending, startTransition] = useTransition();
+
+  function choose(d: Devise) {
+    setChoix(d);
+    startTransition(() => saveDevise(d));
+  }
+
+  return (
+    <div className="field">
+      <span id="devise-label">Devise du budget</span>
+      <div className="segmented" role="radiogroup" aria-labelledby="devise-label" aria-busy={pending}>
+        {(Object.keys(DEVISES) as Devise[]).map((d) => (
+          <label key={d} title={DEVISES[d].nom}>
+            <input type="radio" name="devise" value={d} checked={choix === d} onChange={() => choose(d)} />
+            <span>
+              {d} · {DEVISES[d].symbole}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function SalaryForm({ salaire }: { salaire: number }) {
+  const symbole = useSymbole();
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(saveSalary, null);
   const [dirty, setDirty] = useState(false);
   useEffect(() => {
@@ -31,7 +60,7 @@ export function SalaryForm({ salaire }: { salaire: number }) {
   return (
     <form onSubmit={submitKeepingValues(action)} className="salary-form" onChange={() => setDirty(true)}>
       <label className="field">
-        <span>Salaire mensuel net (€)</span>
+        <span>Salaire mensuel net ({symbole})</span>
         <input className="input num" name="salaire" defaultValue={salaire ? toInput(salaire) : ""} placeholder="0,00" required {...amountProps} />
       </label>
       <button className="btn btn-primary" type="submit" disabled={pending || !dirty}>

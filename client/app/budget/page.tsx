@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
-import { FixedTable, SalaryForm } from "@/components/BudgetForms";
-import { getSalary, listFixedItems } from "@/lib/db";
-import { money } from "@/lib/finance";
+import { DeviseForm, FixedTable, SalaryForm } from "@/components/BudgetForms";
+import { getDevise, getSalary, listFixedItems } from "@/lib/db";
+import { DEVISES, money } from "@/lib/finance";
 
 export const metadata: Metadata = { title: "Budget" };
 
 export default async function Budget() {
-  const [salaire, fixed] = await Promise.all([getSalary(), listFixedItems()]);
+  const [salaire, fixed, devise] = await Promise.all([getSalary(), listFixedItems(), getDevise()]);
   const charges = fixed.reduce((s, f) => s + f.montant, 0);
   const ouverture = salaire - charges;
 
@@ -26,7 +26,10 @@ export default async function Budget() {
             <div className="section-head">
               <h2 id="sal-title">Salaire</h2>
             </div>
-            <SalaryForm salaire={salaire} />
+            <div className="grid gap-6">
+              <DeviseForm />
+              <SalaryForm salaire={salaire} />
+            </div>
           </section>
 
           <section className="panel" aria-labelledby="fix-title">
@@ -54,7 +57,7 @@ export default async function Budget() {
           </div>
           <div className={`plate-sm${ouverture < 0 ? " is-negative" : ""}`}>
             <span>Disponible avant dépenses</span>
-            <span className="num">{money(ouverture)} €</span>
+            <span className="num">{money(ouverture)} {DEVISES[devise].symbole}</span>
           </div>
           {salaire > 0 && (
             <p className="form-note mt-2">

@@ -16,6 +16,7 @@ import {
 import { submitKeepingValues } from "@/lib/form";
 
 import { CategoryPlate } from "./CategoryPlate";
+import { useSymbole } from "./Currency";
 
 interface Props {
   lines: TapeLine[];
@@ -28,6 +29,7 @@ interface Props {
 }
 
 function QuickEntry({ defaultDate, minDate, maxDate }: Pick<Props, "defaultDate" | "minDate" | "maxDate">) {
+  const symbole = useSymbole();
   const [type, setType] = useState<"Dépense" | "Revenu">("Dépense");
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(addTransaction, null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -78,7 +80,7 @@ function QuickEntry({ defaultDate, minDate, maxDate }: Pick<Props, "defaultDate"
           </div>
         </div>
         <label className="field field-amount">
-          <span>Montant (€)</span>
+          <span>Montant ({symbole})</span>
           <input
             ref={amountRef}
             className="input num"
@@ -131,6 +133,7 @@ function QuickEntry({ defaultDate, minDate, maxDate }: Pick<Props, "defaultDate"
 }
 
 export function MonthTape({ lines, ouverture, defaultDate, minDate, maxDate, crossedZeroOn, hasSalary }: Props) {
+  const symbole = useSymbole();
   const [hidden, setHidden] = useState<Set<number>>(new Set());
   const [undo, setUndo] = useState<Transaction | null>(null);
   const [, startTransition] = useTransition();
@@ -254,7 +257,7 @@ export function MonthTape({ lines, ouverture, defaultDate, minDate, maxDate, cro
                         type="button"
                         className="icon-btn"
                         onClick={() => remove(l)}
-                        aria-label={`Supprimer ${l.description || l.categorie}, ${money(l.montant)} €`}
+                        aria-label={`Supprimer ${l.description || l.categorie}, ${money(l.montant)} ${symbole}`}
                       >
                         <Trash2 size={15} aria-hidden />
                       </button>
@@ -286,7 +289,7 @@ export function MonthTape({ lines, ouverture, defaultDate, minDate, maxDate, cro
       {undo && (
         <div className="toast" role="status">
           <span>
-            Ligne supprimée : {undo.description || undo.categorie}, {money(undo.montant)} €
+            Ligne supprimée : {undo.description || undo.categorie}, {money(undo.montant)} {symbole}
           </span>
           <button type="button" onClick={restore}>
             Annuler

@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { daysInMonth, money, moneyRound, type MonthKey, type MonthReste } from "@/lib/finance";
 
-function Trace({ month, data }: { month: MonthKey; data: MonthReste }) {
+function Trace({ month, data, symbole }: { month: MonthKey; data: MonthReste; symbole: string }) {
   const W = 360;
   const H = 170;
   const PAD_L = 48;
@@ -30,7 +30,7 @@ function Trace({ month, data }: { month: MonthKey; data: MonthReste }) {
   const showProj = last && data.joursRestants > 1 && data.reste > 0;
 
   const label = data.trace.length
-    ? `Évolution du reste : ${money(data.ouverture)} € au 1er, ${money(data.reste)} € aujourd'hui.`
+    ? `Évolution du reste : ${money(data.ouverture)} ${symbole} au 1er, ${money(data.reste)} ${symbole} aujourd'hui.`
     : "Le mois n'a pas encore commencé.";
 
   return (
@@ -65,7 +65,17 @@ function Trace({ month, data }: { month: MonthKey; data: MonthReste }) {
   );
 }
 
-export function RestePlate({ month, data, isCurrent }: { month: MonthKey; data: MonthReste; isCurrent: boolean }) {
+export function RestePlate({
+  month,
+  data,
+  isCurrent,
+  symbole,
+}: {
+  month: MonthKey;
+  data: MonthReste;
+  isCurrent: boolean;
+  symbole: string;
+}) {
   if (data.salaire <= 0) {
     return (
       <section className="plate" aria-labelledby="reste-title">
@@ -97,7 +107,7 @@ export function RestePlate({ month, data, isCurrent }: { month: MonthKey; data: 
           <span className="num vfd-refresh" key={data.reste}>
             {money(data.reste)}
           </span>
-          <span className="unit">€</span>
+          <span className="unit">{symbole}</span>
           <h2 id="reste-title" className="caption">
             {negative
               ? isCurrent
@@ -138,10 +148,10 @@ export function RestePlate({ month, data, isCurrent }: { month: MonthKey; data: 
               {perDay >= 0 ? "Soit par jour, sur " : "Dépassement par jour restant, sur "}
               {data.joursRestants} {data.joursRestants > 1 ? "jours" : "jour"}
             </span>
-            <span className="num">{money(Math.abs(perDay))} €</span>
+            <span className="num">{money(Math.abs(perDay))} {symbole}</span>
           </div>
         )}
-        <Trace month={month} data={data} />
+        <Trace month={month} data={data} symbole={symbole} />
       </div>
     </section>
   );
