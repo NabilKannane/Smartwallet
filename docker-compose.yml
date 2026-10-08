@@ -1,0 +1,22 @@
+services:
+  agent:
+    build: ./agent
+    env_file: agent/.env
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  client:
+    build: ./client
+    env_file: client/.env.local
+    environment:
+      AI_SERVICE_URL: http://agent:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      agent:
+        condition: service_healthy
