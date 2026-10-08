@@ -1,7 +1,8 @@
 import os
 
 from agno.agent import Agent
-from agno.models.google import Gemini
+# from agno.models.google import Gemini
+from agno.models.lmstudio import LMStudio
 
 from agent_db import db, check_db  # noqa: F401 (check_db réexporté pour main.py)
 from tools import lister_wishlist, ajouter_wishlist
@@ -20,12 +21,10 @@ agent_instruction = [
 
 # Création de l'agent avec le modèle Gemini et les instructions définies
 agent = Agent(
-    # Gemini renvoie parfois 503 (modèle surchargé) : on réessaie 3 fois en espaçant (2 s, 4 s, 8 s).
-    model=Gemini(
-        api_key=os.getenv("GOOGLE_API_KEY"),
-        retries=3,
-        delay_between_retries=2,
-        exponential_backoff=True,
+    # Modèle local servi par LM Studio. Depuis Docker, localhost est le conteneur : on passe l'URL par l'env.
+    model=LMStudio(
+        id="qwen3-8b",
+        base_url=os.getenv("LMSTUDIO_BASE_URL", "http://127.0.0.1:1234/v1"),
     ),
     instructions=agent_instruction,
     markdown=True,

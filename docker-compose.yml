@@ -2,6 +2,11 @@ services:
   agent:
     build: ./agent
     env_file: agent/.env
+    environment:
+      # LM Studio tourne sur la machine hôte, pas dans le conteneur.
+      LMSTUDIO_BASE_URL: http://host.docker.internal:1234/v1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8000:8000"
     healthcheck:

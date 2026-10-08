@@ -43,7 +43,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     if result.status == RunStatus.error:
         print(f"❌ Erreur du modèle : {result.content}")
         raise HTTPException(status_code=503, detail="model_unavailable")
-    return ChatResponse(reply=result.content)
+    return ChatResponse(reply=(result.content or "").strip())
 
 
 if __name__ == "__main__":

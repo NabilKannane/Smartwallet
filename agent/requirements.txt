@@ -2,6 +2,7 @@ agno
 fastapi
 uvicorn
 google-genai
+openai
 python-dotenv
 sqlalchemy[asyncio]
 psycopg[binary]
