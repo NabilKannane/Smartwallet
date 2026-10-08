@@ -34,6 +34,15 @@ async function createSchema() {
       montant DOUBLE PRECISION NOT NULL
     )`;
   await sql`
+    CREATE TABLE IF NOT EXISTS wishlist (
+      id SERIAL PRIMARY KEY,
+      nom TEXT NOT NULL,
+      prix DOUBLE PRECISION NOT NULL,
+      priorite TEXT NOT NULL,
+      note TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await sql`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
@@ -65,6 +74,14 @@ export interface FixedItem {
   nom: string;
   categorie: string;
   montant: number;
+}
+
+export interface WishItem {
+  id: number;
+  nom: string;
+  prix: number;
+  priorite: string;
+  note: string | null;
 }
 
 // --- Transactions ---
@@ -128,6 +145,31 @@ export async function updateFixedItem(id: number, nom: string, categorie: string
 export async function removeFixedItem(id: number) {
   await ready();
   await sql`DELETE FROM fixed_items WHERE id = ${id}`;
+}
+
+// --- Wishlist ---
+
+export async function listWishlist(): Promise<WishItem[]> {
+  await ready();
+  return (await sql`
+    SELECT id, nom, prix, priorite, note FROM wishlist
+    ORDER BY CASE priorite WHEN 'Haute' THEN 0 WHEN 'Moyenne' THEN 1 ELSE 2 END, prix, id
+  `) as WishItem[];
+}
+
+export async function insertWish(nom: string, prix: number, priorite: string, note: string | null) {
+  await ready();
+  await sql`INSERT INTO wishlist (nom, prix, priorite, note) VALUES (${nom}, ${prix}, ${priorite}, ${note})`;
+}
+
+export async function updateWish(id: number, nom: string, prix: number, priorite: string, note: string | null) {
+  await ready();
+  await sql`UPDATE wishlist SET nom = ${nom}, prix = ${prix}, priorite = ${priorite}, note = ${note} WHERE id = ${id}`;
+}
+
+export async function removeWish(id: number) {
+  await ready();
+  await sql`DELETE FROM wishlist WHERE id = ${id}`;
 }
 
 // --- Paramètres ---

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getDevise, getSalary, getSetting, listFixedItems, listTransactions } from "./db";
+import { getDevise, getSalary, getSetting, listFixedItems, listTransactions, listWishlist } from "./db";
 import { computeMonth, formatContext, monthKey, monthRange, type MonthKey, type Verdict } from "./finance";
 
 export async function loadMonth(month: MonthKey) {
@@ -12,8 +12,12 @@ export async function loadMonth(month: MonthKey) {
 }
 
 export async function currentContext(): Promise<string> {
-  const [{ salaire, fixed, month }, devise] = await Promise.all([loadMonth(monthKey(new Date())), getDevise()]);
-  return formatContext(salaire, fixed, month, devise);
+  const [{ salaire, fixed, month }, devise, wishlist] = await Promise.all([
+    loadMonth(monthKey(new Date())),
+    getDevise(),
+    listWishlist(),
+  ]);
+  return formatContext(salaire, fixed, month, devise, wishlist);
 }
 
 export interface LastVerdict {

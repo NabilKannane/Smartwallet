@@ -38,10 +38,10 @@ function useSessionId() {
   return id;
 }
 
-export function Chat({ suggestions }: { suggestions: string[] }) {
+export function Chat({ suggestions, initialQuestion = "" }: { suggestions: string[]; initialQuestion?: string }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const symbole = useSymbole();
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialQuestion);
   const [busy, setBusy] = useState(false);
   const [restored, setRestored] = useState(false);
   const sessionId = useSessionId();
@@ -180,6 +180,7 @@ export function Chat({ suggestions }: { suggestions: string[] }) {
           <span className="sr-only">Ta question</span>
           <textarea
             ref={inputRef}
+            autoFocus={Boolean(initialQuestion)}
             className="textarea"
             rows={2}
             value={draft}

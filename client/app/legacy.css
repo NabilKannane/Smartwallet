@@ -1462,6 +1462,43 @@ kbd {
   color: var(--red);
 }
 
+/* ---------- Wishlist ---------- */
+
+.wish-table td:first-child {
+  min-width: 12rem;
+}
+
+.wish-table .wish-note {
+  min-height: 30px;
+  padding-block: 4px;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.wish-table .add-row .wish-note {
+  margin-top: 6px;
+}
+
+.wish-ok,
+.wish-ko {
+  font-size: var(--step--1);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wish-ok {
+  color: var(--gain);
+}
+
+.wish-ko {
+  color: var(--red);
+}
+
+.icon-btn-ask:hover {
+  background: var(--paper-sunk);
+  color: var(--ink);
+}
+
 /* ---------- Assistant ---------- */
 
 .chat-grid {
@@ -1889,6 +1926,26 @@ kbd {
 
   .fixed-table .add-row td:nth-child(1) {
     display: none;
+  }
+
+  .wish-table tbody tr,
+  .wish-table .add-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name name"
+      "prio amount"
+      "fit actions";
+  }
+
+  .wish-table td:nth-child(1) { grid-area: name; display: block !important; }
+  .wish-table td:nth-child(2) { grid-area: prio; }
+  .wish-table td:nth-child(3) { grid-area: amount; width: 8rem; }
+  .wish-table td:nth-child(4) { grid-area: fit; }
+  .wish-table td:nth-child(5) { grid-area: actions; }
+  .wish-table .add-row td:nth-child(4) { display: none; }
+
+  .wish-table .add-row td:nth-child(5) {
+    grid-column: 1 / -1;
   }
 
   .fixed-table .add-row .row-actions,

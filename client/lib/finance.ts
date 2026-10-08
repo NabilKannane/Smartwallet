@@ -13,6 +13,8 @@ export const CATEGORIES_DEPENSE = [
 
 export const CATEGORIES_REVENU = ["Salaire", "Freelance", "Investissement", "Autres"] as const;
 
+export const PRIORITES = ["Haute", "Moyenne", "Basse"] as const;
+
 export const CATEGORIES_FIXES = ["Logement", "Facture", "Abonnement", "Transport", "Assurance", "Autres"] as const;
 
 /** Plaque d'identité fixe par catégorie : code court + couleur, identique dans toute l'app. */
@@ -228,6 +230,7 @@ export function formatContext(
   fixed: { nom: string; categorie: string; montant: number }[],
   month: MonthReste,
   devise: Devise = "EUR",
+  wishlist: { nom: string; prix: number; priorite: string; note: string | null }[] = [],
 ): string {
   const symbole = DEVISES[devise].symbole;
   const f = (n: number) => `${n.toFixed(2)} ${symbole}`;
@@ -245,6 +248,13 @@ export function formatContext(
   lines.push(`Autres revenus ce mois-ci : ${f(month.revenus)}`);
   lines.push(`Reste réel du mois à ce jour : ${f(month.reste)}`);
   if (month.joursRestants > 0) lines.push(`Jours restants dans le mois : ${month.joursRestants}`);
+  if (wishlist.length) {
+    lines.push("Achats prévus (wishlist) :");
+    for (const w of wishlist) {
+      lines.push(`  - ${w.nom} : ${f(w.prix)} (priorité ${w.priorite.toLowerCase()})${w.note ? ` — ${w.note}` : ""}`);
+    }
+    lines.push(`Total de la wishlist : ${f(wishlist.reduce((s, w) => s + w.prix, 0))}`);
+  }
   return lines.join("\n");
 }
 

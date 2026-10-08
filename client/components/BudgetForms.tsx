@@ -12,14 +12,14 @@ import { submitKeepingValues } from "@/lib/form";
 import { CategoryPlate } from "./CategoryPlate";
 import { useDevise, useSymbole } from "./Currency";
 
-const amountProps = {
+export const amountProps = {
   inputMode: "decimal" as const,
   autoComplete: "off",
   pattern: "[0-9 ]+([,.][0-9]{1,2})?",
   title: "Un montant comme 850 ou 49,99",
 };
 
-function toInput(n: number) {
+export function toInput(n: number) {
   return n.toFixed(2).replace(".", ",");
 }
 
@@ -45,7 +45,7 @@ export function MasqueToggle({ masque }: { masque: boolean }) {
 }
 
 /** Montant masqué : la vraie valeur reste dans un champ caché pour que le formulaire s'envoie normalement. */
-function MaskedInput(props: React.ComponentProps<"input">) {
+export function MaskedInput(props: React.ComponentProps<"input">) {
   return (
     <>
       <input {...props} hidden />
