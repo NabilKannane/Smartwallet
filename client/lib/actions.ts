@@ -11,7 +11,7 @@ import {
   updateFixedItem,
   type Transaction,
 } from "./db";
-import { CATEGORIES_DEPENSE, CATEGORIES_FIXES, CATEGORIES_REVENU } from "./finance";
+import { CATEGORIES_DEPENSE, CATEGORIES_FIXES, CATEGORIES_REVENU, parseDevise } from "./finance";
 
 export type ActionResult = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -62,6 +62,11 @@ export async function saveSalary(_: ActionResult | null, form: FormData): Promis
   await setSetting("salaire_mensuel", String(v));
   refreshAll();
   return { ok: true };
+}
+
+export async function saveDevise(devise: string): Promise<void> {
+  await setSetting("devise", parseDevise(devise));
+  refreshAll();
 }
 
 function readFixed(form: FormData): { nom: string; categorie: string; montant: number } | string {

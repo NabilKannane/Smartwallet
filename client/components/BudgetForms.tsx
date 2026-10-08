@@ -1,14 +1,16 @@
 "use client";
 
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Check, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 
-import { addFixed, deleteFixed, editFixed, saveSalary, type ActionResult } from "@/lib/actions";
+import { addFixed, deleteFixed, editFixed, saveDevise, saveSalary, type ActionResult } from "@/lib/actions";
 import type { FixedItem } from "@/lib/db";
-import { CATEGORIES_FIXES } from "@/lib/finance";
+import { CATEGORIES_FIXES, DEVISES, MASQUE, type Devise } from "@/lib/finance";
 import { submitKeepingValues } from "@/lib/form";
 
 import { CategoryPlate } from "./CategoryPlate";
+import { useDevise, useSymbole } from "./Currency";
 
 const amountProps = {
   inputMode: "decimal" as const,
@@ -21,7 +23,68 @@ function toInput(n: number) {
   return n.toFixed(2).replace(".", ",");
 }
 
-export function SalaryForm({ salaire }: { salaire: number }) {
+// Cookie lu par app/budget/page.tsx (même nom).
+const MASQUE_COOKIE = "sw-budget-masque";
+
+/** Bouton œil : masque ou affiche les montants de la page Budget. */
+export function MasqueToggle({ masque }: { masque: boolean }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const label = masque ? "Afficher les montants" : "Masquer les montants";
+
+  function toggle() {
+    document.cookie = `${MASQUE_COOKIE}=${masque ? "0" : "1"}; path=/; max-age=31536000; samesite=lax`;
+    startTransition(() => router.refresh());
+  }
+
+  return (
+    <button type="button" className="btn btn-ghost" onClick={toggle} disabled={pending} aria-pressed={masque}>
+      {masque ? <Eye size={16} aria-hidden /> : <EyeOff size={16} aria-hidden />} {label}
+    </button>
+  );
+}
+
+/** Montant masqué : la vraie valeur reste dans un champ caché pour que le formulaire s'envoie normalement. */
+function MaskedInput(props: React.ComponentProps<"input">) {
+  return (
+    <>
+      <input {...props} hidden />
+      <span className="input num" aria-label="Montant masqué">
+        {MASQUE}
+      </span>
+    </>
+  );
+}
+
+export function DeviseForm() {
+  const devise = useDevise();
+  const [choix, setChoix] = useState(devise);
+  const [pending, startTransition] = useTransition();
+
+  function choose(d: Devise) {
+    setChoix(d);
+    startTransition(() => saveDevise(d));
+  }
+
+  return (
+    <div className="field">
+      <span id="devise-label">Devise du budget</span>
+      <div className="segmented" role="radiogroup" aria-labelledby="devise-label" aria-busy={pending}>
+        {(Object.keys(DEVISES) as Devise[]).map((d) => (
+          <label key={d} title={DEVISES[d].nom}>
+            <input type="radio" name="devise" value={d} checked={choix === d} onChange={() => choose(d)} />
+            <span>
+              {d} · {DEVISES[d].symbole}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function SalaryForm({ salaire, masque }: { salaire: number; masque: boolean }) {
+  const symbole = useSymbole();
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(saveSalary, null);
   const [dirty, setDirty] = useState(false);
   useEffect(() => {
@@ -31,8 +94,12 @@ export function SalaryForm({ salaire }: { salaire: number }) {
   return (
     <form onSubmit={submitKeepingValues(action)} className="salary-form" onChange={() => setDirty(true)}>
       <label className="field">
-        <span>Salaire mensuel net (€)</span>
-        <input className="input num" name="salaire" defaultValue={salaire ? toInput(salaire) : ""} placeholder="0,00" required {...amountProps} />
+        <span>Salaire mensuel net ({symbole})</span>
+        {masque && salaire ? (
+          <MaskedInput name="salaire" defaultValue={toInput(salaire)} />
+        ) : (
+          <input className="input num" name="salaire" defaultValue={salaire ? toInput(salaire) : ""} placeholder="0,00" required {...amountProps} />
+        )}
       </label>
       <button className="btn btn-primary" type="submit" disabled={pending || !dirty}>
         {pending ? "Enregistrement…" : "Enregistrer"}
@@ -44,7 +111,7 @@ export function SalaryForm({ salaire }: { salaire: number }) {
   );
 }
 
-function FixedRow({ item }: { item: FixedItem }) {
+function FixedRow({ item, masque }: { item: FixedItem; masque: boolean }) {
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(editFixed, null);
   const [dirty, setDirty] = useState(false);
   const [removing, startRemove] = useTransition();
@@ -77,7 +144,11 @@ function FixedRow({ item }: { item: FixedItem }) {
         </select>
       </td>
       <td className="w-[18%]">
-        <input form={formId} className="input num" name="montant" defaultValue={toInput(item.montant)} aria-label="Montant en euros" required onChange={() => setDirty(true)} {...amountProps} />
+        {masque ? (
+          <MaskedInput form={formId} name="montant" defaultValue={toInput(item.montant)} />
+        ) : (
+          <input form={formId} className="input num" name="montant" defaultValue={toInput(item.montant)} aria-label="Montant" required onChange={() => setDirty(true)} {...amountProps} />
+        )}
       </td>
       <td>
         <div className="row-actions">
@@ -144,7 +215,7 @@ function AddFixedRow() {
   );
 }
 
-export function FixedTable({ items }: { items: FixedItem[] }) {
+export function FixedTable({ items, masque }: { items: FixedItem[]; masque: boolean }) {
   return (
     <div className="table-scroll">
       <table className="fixed-table">
@@ -172,7 +243,7 @@ export function FixedTable({ items }: { items: FixedItem[] }) {
             </tr>
           )}
           {items.map((it) => (
-            <FixedRow key={`${it.id}-${it.nom}-${it.categorie}-${it.montant}`} item={it} />
+            <FixedRow key={`${it.id}-${it.nom}-${it.categorie}-${it.montant}`} item={it} masque={masque} />
           ))}
           <AddFixedRow />
         </tbody>

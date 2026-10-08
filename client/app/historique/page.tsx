@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { MasqueToggle } from "@/components/BudgetForms";
 import { CategoryPlate } from "@/components/CategoryPlate";
 import { Ledger } from "@/components/Ledger";
-import { listTransactions } from "@/lib/db";
+import { getDevise, listTransactions } from "@/lib/db";
 import {
   CATEGORIES_DEPENSE,
   CATEGORIES_REVENU,
-  money,
+  DEVISES,
+  MASQUE,
+  moneyOr,
   moneyRound,
   monthKey,
   monthLabel,
@@ -18,6 +21,7 @@ import {
   shiftMonth,
   type MonthKey,
 } from "@/lib/finance";
+import { isMasque } from "@/lib/masque";
 
 export const metadata: Metadata = { title: "Historique" };
 
@@ -32,7 +36,19 @@ function monthsBetween(from: MonthKey, to: MonthKey): MonthKey[] {
 }
 
 /** Barres mois par mois, toujours sur la même échelle (max de tout l'historique). */
-function MonthBars({ months, totals, scaleMax }: { months: MonthKey[]; totals: Map<MonthKey, { in: number; out: number }>; scaleMax: number }) {
+function MonthBars({
+  months,
+  totals,
+  scaleMax,
+  symbole,
+  masque,
+}: {
+  months: MonthKey[];
+  totals: Map<MonthKey, { in: number; out: number }>;
+  scaleMax: number;
+  symbole: string;
+  masque: boolean;
+}) {
   const W = 640;
   const H = 220;
   const L = 52;
@@ -45,7 +61,7 @@ function MonthBars({ months, totals, scaleMax }: { months: MonthKey[]; totals: M
   const label = months
     .map((m) => {
       const t = totals.get(m) ?? { in: 0, out: 0 };
-      return `${monthLabel(m)} : dépenses ${money(t.out)} €, revenus ${money(t.in)} €`;
+      return `${monthLabel(m)} : dépenses ${moneyOr(masque, t.out)} ${symbole}, revenus ${moneyOr(masque, t.in)} ${symbole}`;
     })
     .join(" ; ");
 
@@ -55,7 +71,7 @@ function MonthBars({ months, totals, scaleMax }: { months: MonthKey[]; totals: M
         <g key={v}>
           <line className={v === 0 ? "base" : "grid"} x1={L} x2={W} y1={y(v)} y2={y(v)} />
           <text x={L - 8} y={y(v) + 3.5} textAnchor="end">
-            {moneyRound(v)}
+            {masque && v > 0 ? MASQUE : moneyRound(v)}
           </text>
         </g>
       ))}
@@ -64,7 +80,7 @@ function MonthBars({ months, totals, scaleMax }: { months: MonthKey[]; totals: M
         const cx = L + colW * i + colW / 2;
         return (
           <g key={m} className="col">
-            <title>{`${monthLabel(m)} — dépenses ${money(t.out)} €, revenus ${money(t.in)} €`}</title>
+            <title>{`${monthLabel(m)} — dépenses ${moneyOr(masque, t.out)} ${symbole}, revenus ${moneyOr(masque, t.in)} ${symbole}`}</title>
             <rect className="b-out" x={cx - barW - 1} width={barW} y={y(t.out)} height={y(0) - y(t.out)} rx={1.5} />
             <rect className="b-in" x={cx + 1} width={barW} y={y(t.in)} height={y(0) - y(t.in)} rx={1.5} />
             {(months.length <= 12 || i % 2 === 0) && (
@@ -81,7 +97,8 @@ function MonthBars({ months, totals, scaleMax }: { months: MonthKey[]; totals: M
 
 export default async function Historique({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
-  const all = await listTransactions();
+  const [all, devise, masque] = await Promise.all([listTransactions(), getDevise(), isMasque()]);
+  const symbole = DEVISES[devise].symbole;
   const current = monthKey(new Date());
 
   if (all.length === 0) {
@@ -155,6 +172,7 @@ export default async function Historique({ searchParams }: { searchParams: SP })
           <h1>Historique</h1>
           <p>Où part ton argent, mois après mois. Toujours sur la même échelle, pour comparer d’un coup d’œil.</p>
         </div>
+        <MasqueToggle masque={masque} />
       </header>
 
       <form className="filters" method="get" aria-label="Filtres">
@@ -225,16 +243,16 @@ export default async function Historique({ searchParams }: { searchParams: SP })
                   </span>
                 </div>
               </div>
-              <MonthBars months={visibleMonths} totals={totals} scaleMax={scaleMax} />
+              <MonthBars symbole={symbole} masque={masque} months={visibleMonths} totals={totals} scaleMax={scaleMax} />
               <p className="scale-note">
-                Échelle fixe de 0 à <span className="num">{moneyRound(scaleMax)} €</span>, calée sur ton plus gros mois.
+                Échelle fixe de 0 à <span className="num">{masque ? MASQUE : moneyRound(scaleMax)} {symbole}</span>, calée sur ton plus gros mois.
               </p>
             </section>
 
             <section className="panel" aria-labelledby="cat-title">
               <div className="section-head">
                 <h2 id="cat-title">Par catégorie</h2>
-                <span className="num form-note">{money(catTotal)} €</span>
+                <span className="num form-note">{moneyOr(masque, catTotal)} {symbole}</span>
               </div>
               {catList.length === 0 ? (
                 <p className="form-note">Aucune dépense dans cette sélection.</p>
@@ -244,7 +262,7 @@ export default async function Historique({ searchParams }: { searchParams: SP })
                     <li key={c} style={{ "--plate-color": plateFor(c).color } as React.CSSProperties}>
                       <CategoryPlate categorie={c} />
                       <span>
-                        <span className="num">{money(v)}</span>
+                        <span className="num">{moneyOr(masque, v)}</span>
                         <span className="share num">{Math.round((v / catTotal) * 100)} %</span>
                       </span>
                       <span className="track" aria-hidden>
@@ -261,7 +279,7 @@ export default async function Historique({ searchParams }: { searchParams: SP })
             <div className="section-head">
               <h2 id="led-title">Toutes les lignes</h2>
             </div>
-            <Ledger rows={rows} />
+            <Ledger rows={rows} masque={masque} />
           </section>
         </>
       )}

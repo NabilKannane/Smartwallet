@@ -1,11 +1,13 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
+import { MasqueToggle } from "@/components/BudgetForms";
 import { CategoryPlate } from "@/components/CategoryPlate";
 import { MonthTape } from "@/components/MonthTape";
 import { RestePlate } from "@/components/RestePlate";
-import { monthBounds } from "@/lib/db";
-import { money, monthKey, monthLabel, monthRange, parseMonth, shiftMonth, todayISO } from "@/lib/finance";
+import { getDevise, monthBounds } from "@/lib/db";
+import { DEVISES, moneyOr, monthKey, monthLabel, monthRange, parseMonth, shiftMonth, todayISO } from "@/lib/finance";
+import { isMasque } from "@/lib/masque";
 import { lastVerdict, loadMonth } from "@/lib/summary";
 
 const relative = new Intl.RelativeTimeFormat("fr-FR", { numeric: "auto" });
@@ -20,10 +22,12 @@ export default async function CeMois({ searchParams }: { searchParams: Promise<{
   const current = monthKey(new Date());
   const month = parseMonth(m);
   const isCurrent = month === current;
-  const [{ salaire, fixed, charges, month: data }, { first }, avis] = await Promise.all([
+  const [{ salaire, fixed, charges, month: data }, { first }, avis, devise, masque] = await Promise.all([
     loadMonth(month),
     monthBounds(),
     lastVerdict(),
+    getDevise(),
+    isMasque(),
   ]);
   const firstMonth = first ? first.slice(0, 7) : current;
   const canPrev = month > firstMonth;
@@ -63,9 +67,10 @@ export default async function CeMois({ searchParams }: { searchParams: Promise<{
             </Link>
           )}
         </nav>
+        <MasqueToggle masque={masque} />
       </header>
 
-      <RestePlate month={month} data={data} isCurrent={isCurrent} />
+      <RestePlate month={month} data={data} isCurrent={isCurrent} symbole={DEVISES[devise].symbole} masque={masque} />
 
       <div className="month-grid">
         <MonthTape
@@ -76,6 +81,7 @@ export default async function CeMois({ searchParams }: { searchParams: Promise<{
           maxDate={to}
           crossedZeroOn={data.crossedZeroOn}
           hasSalary={salaire > 0}
+          masque={masque}
         />
 
         <div className="aside">
@@ -98,13 +104,13 @@ export default async function CeMois({ searchParams }: { searchParams: Promise<{
                       <span className="cat-name min-w-0 flex-1">
                         {f.nom}
                       </span>
-                      <span className="num">{money(f.montant)}</span>
+                      <span className="num">{moneyOr(masque, f.montant)}</span>
                     </li>
                   ))}
                 </ul>
                 <div className="total">
                   <span>Total / mois</span>
-                  <span className="num">{money(charges)} €</span>
+                  <span className="num">{moneyOr(masque, charges)} {DEVISES[devise].symbole}</span>
                 </div>
               </>
             )}

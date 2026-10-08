@@ -9,13 +9,15 @@ import {
   CATEGORIES_DEPENSE,
   CATEGORIES_REVENU,
   dayLabel,
-  money,
+  MASQUE,
+  moneyOr,
   signed,
   type TapeLine,
 } from "@/lib/finance";
 import { submitKeepingValues } from "@/lib/form";
 
 import { CategoryPlate } from "./CategoryPlate";
+import { useSymbole } from "./Currency";
 
 interface Props {
   lines: TapeLine[];
@@ -25,9 +27,11 @@ interface Props {
   maxDate: string;
   crossedZeroOn: string | null;
   hasSalary: boolean;
+  masque: boolean;
 }
 
 function QuickEntry({ defaultDate, minDate, maxDate }: Pick<Props, "defaultDate" | "minDate" | "maxDate">) {
+  const symbole = useSymbole();
   const [type, setType] = useState<"Dépense" | "Revenu">("Dépense");
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(addTransaction, null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -78,7 +82,7 @@ function QuickEntry({ defaultDate, minDate, maxDate }: Pick<Props, "defaultDate"
           </div>
         </div>
         <label className="field field-amount">
-          <span>Montant (€)</span>
+          <span>Montant ({symbole})</span>
           <input
             ref={amountRef}
             className="input num"
@@ -130,7 +134,8 @@ function QuickEntry({ defaultDate, minDate, maxDate }: Pick<Props, "defaultDate"
   );
 }
 
-export function MonthTape({ lines, ouverture, defaultDate, minDate, maxDate, crossedZeroOn, hasSalary }: Props) {
+export function MonthTape({ lines, ouverture, defaultDate, minDate, maxDate, crossedZeroOn, hasSalary, masque }: Props) {
+  const symbole = useSymbole();
   const [hidden, setHidden] = useState<Set<number>>(new Set());
   const [undo, setUndo] = useState<Transaction | null>(null);
   const [, startTransition] = useTransition();
@@ -254,16 +259,16 @@ export function MonthTape({ lines, ouverture, defaultDate, minDate, maxDate, cro
                         type="button"
                         className="icon-btn"
                         onClick={() => remove(l)}
-                        aria-label={`Supprimer ${l.description || l.categorie}, ${money(l.montant)} €`}
+                        aria-label={`Supprimer ${l.description || l.categorie}, ${moneyOr(masque, l.montant)} ${symbole}`}
                       >
                         <Trash2 size={15} aria-hidden />
                       </button>
                     </td>
                     <td className={`col-amount num${l.type === "Revenu" ? " amount-in" : ""}`}>
-                      {signed(l.type === "Revenu" ? l.montant : -l.montant)}
+                      {masque ? MASQUE : signed(l.type === "Revenu" ? l.montant : -l.montant)}
                     </td>
-                    <td className={`col-after num${hasSalary && l.after < 0 ? " after-neg" : ""}`}>
-                      {hasSalary ? money(l.after) : "—"}
+                    <td className={`col-after num${!masque && hasSalary && l.after < 0 ? " after-neg" : ""}`}>
+                      {hasSalary ? moneyOr(masque, l.after) : "—"}
                     </td>
                   </tr>
                 );
@@ -276,7 +281,7 @@ export function MonthTape({ lines, ouverture, defaultDate, minDate, maxDate, cro
               <th colSpan={4} scope="row">
                 Ouverture du mois<span className="foot-note"> · salaire − charges fixes</span>
               </th>
-              <td className="col-after num">{hasSalary ? money(ouverture) : "—"}</td>
+              <td className="col-after num">{hasSalary ? moneyOr(masque, ouverture) : "—"}</td>
             </tr>
           </tfoot>
         </table>
@@ -286,7 +291,7 @@ export function MonthTape({ lines, ouverture, defaultDate, minDate, maxDate, cro
       {undo && (
         <div className="toast" role="status">
           <span>
-            Ligne supprimée : {undo.description || undo.categorie}, {money(undo.montant)} €
+            Ligne supprimée : {undo.description || undo.categorie}, {moneyOr(masque, undo.montant)} {symbole}
           </span>
           <button type="button" onClick={restore}>
             Annuler

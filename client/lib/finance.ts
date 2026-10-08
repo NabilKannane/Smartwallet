@@ -37,6 +37,28 @@ export function plateFor(categorie: string) {
   return PLATES[categorie] ?? { code: categorie.slice(0, 3).toUpperCase(), color: "#C4BCAD" };
 }
 
+// --- Devise (une seule pour tout le budget, sans conversion) ---
+
+export const DEVISES = {
+  MAD: { symbole: "DH", nom: "Dirham marocain" },
+  EUR: { symbole: "€", nom: "Euro" },
+  USD: { symbole: "$", nom: "Dollar américain" },
+} as const;
+
+export type Devise = keyof typeof DEVISES;
+
+export function parseDevise(v: unknown): Devise {
+  return typeof v === "string" && v in DEVISES ? (v as Devise) : "EUR";
+}
+
+/** Remplace un montant quand l'utilisateur masque son budget. */
+export const MASQUE = "****";
+
+/** money(), ou **** si les montants sont masqués. */
+export function moneyOr(masque: boolean, n: number): string {
+  return masque ? MASQUE : money(n);
+}
+
 const euro = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const euroRound = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 
@@ -205,21 +227,23 @@ export function formatContext(
   salaire: number,
   fixed: { nom: string; categorie: string; montant: number }[],
   month: MonthReste,
+  devise: Devise = "EUR",
 ): string {
-  const f = (n: number) => n.toFixed(2);
+  const symbole = DEVISES[devise].symbole;
+  const f = (n: number) => `${n.toFixed(2)} ${symbole}`;
   const total = fixed.reduce((s, x) => s + x.montant, 0);
-  const lines = [`Salaire mensuel net : ${f(salaire)} €`];
+  const lines = [`Salaire mensuel net : ${f(salaire)}`];
   if (fixed.length) {
     lines.push("Charges fixes mensuelles :");
-    for (const item of fixed) lines.push(`  - ${item.nom} (${item.categorie}) : ${f(item.montant)} €`);
+    for (const item of fixed) lines.push(`  - ${item.nom} (${item.categorie}) : ${f(item.montant)}`);
   } else {
     lines.push("Charges fixes mensuelles : aucune renseignée");
   }
-  lines.push(`Total charges fixes : ${f(total)} €`);
-  lines.push(`Reste disponible après charges fixes : ${f(salaire - total)} €`);
-  lines.push(`Dépenses variables ce mois-ci : ${f(month.depenses)} €`);
-  lines.push(`Autres revenus ce mois-ci : ${f(month.revenus)} €`);
-  lines.push(`Reste réel du mois à ce jour : ${f(month.reste)} €`);
+  lines.push(`Total charges fixes : ${f(total)}`);
+  lines.push(`Reste disponible après charges fixes : ${f(salaire - total)}`);
+  lines.push(`Dépenses variables ce mois-ci : ${f(month.depenses)}`);
+  lines.push(`Autres revenus ce mois-ci : ${f(month.revenus)}`);
+  lines.push(`Reste réel du mois à ce jour : ${f(month.reste)}`);
   if (month.joursRestants > 0) lines.push(`Jours restants dans le mois : ${month.joursRestants}`);
   return lines.join("\n");
 }
