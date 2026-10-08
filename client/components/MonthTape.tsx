@@ -13,6 +13,7 @@ import {
   signed,
   type TapeLine,
 } from "@/lib/finance";
+import { submitKeepingValues } from "@/lib/form";
 
 import { CategoryPlate } from "./CategoryPlate";
 
@@ -57,7 +58,7 @@ function QuickEntry({ defaultDate, minDate, maxDate }: Pick<Props, "defaultDate"
   }, []);
 
   return (
-    <form ref={formRef} action={action} className="entry" aria-label="Ajouter une ligne">
+    <form ref={formRef} onSubmit={submitKeepingValues(action)} className="entry" aria-label="Ajouter une ligne">
       <div className="entry-row">
         <div className="field field-type">
           <span id="type-label">Type</span>
