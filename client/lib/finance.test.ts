@@ -6,7 +6,9 @@ import {
   daysInMonth,
   extractVerdict,
   formatContext,
+  MASQUE,
   money,
+  moneyOr,
   monthRange,
   parseDevise,
   parseMonth,
@@ -68,6 +70,12 @@ describe("format des montants", () => {
   it("ajoute le signe", () => {
     expect(plain(signed(12.5))).toBe("+12,50");
     expect(plain(signed(-12.5))).toBe("−12,50");
+  });
+
+  it("remplace le montant par **** quand il est masqué", () => {
+    expect(moneyOr(true, 1234.5)).toBe(MASQUE);
+    expect(moneyOr(true, -50)).toBe("****");
+    expect(plain(moneyOr(false, 1234.5))).toBe("1 234,50");
   });
 });
 
