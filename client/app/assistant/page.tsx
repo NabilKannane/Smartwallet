@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { ChevronDown } from "lucide-react";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { MasqueToggle } from "@/components/BudgetForms";
@@ -27,6 +28,8 @@ export default async function Assistant({ searchParams }: { searchParams: Promis
   ]);
   // Sans conversation existante dans l'URL, on en démarre une nouvelle.
   const conversationId = conversation?.id ?? randomUUID();
+  // Même nom de cookie que dans components/ChatHistory.tsx.
+  const historyCollapsed = (await cookies()).get("sw-history")?.value === "collapsed";
   const symbole = DEVISES[devise].symbole;
   const r = Math.max(0, month.reste);
   // La wishlist est triée par priorité : on propose d'abord l'achat le plus important.
@@ -41,7 +44,7 @@ export default async function Assistant({ searchParams }: { searchParams: Promis
   ];
 
   return (
-    <>
+    <div className="assistant-page">
       <header className="page-head">
         <div>
           <h1>Assistant achat</h1>
@@ -54,7 +57,7 @@ export default async function Assistant({ searchParams }: { searchParams: Promis
       </header>
 
       <div className="chat-grid">
-        <ChatHistory conversations={conversations} activeId={conversationId} />
+        <ChatHistory conversations={conversations} activeId={conversationId} initialCollapsed={historyCollapsed} />
 
         <Chat
           key={conversationId}
@@ -99,6 +102,6 @@ export default async function Assistant({ searchParams }: { searchParams: Promis
           </details>
         </aside>
       </div>
-    </>
+    </div>
   );
 }

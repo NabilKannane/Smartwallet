@@ -1503,9 +1503,36 @@ kbd {
 
 .chat-grid {
   display: grid;
-  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(240px, 300px);
-  gap: var(--space-6);
+  /* La largeur de l'historique est animée par Motion (components/ChatHistory.tsx). */
+  grid-template-columns: auto minmax(0, 1fr) minmax(240px, 300px);
+  gap: var(--space-5);
   align-items: start;
+}
+
+/* La page Assistant occupe toute la hauteur de l'écran : pas de vide sous la conversation. */
+@media (min-width: 1181px) {
+  .main:has(> .assistant-page) {
+    padding-bottom: var(--space-6);
+  }
+}
+
+.assistant-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 2 * var(--space-6));
+  min-height: 520px;
+}
+
+.assistant-page .chat-grid {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.chat-grid > .aside {
+  align-self: start;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 /* ---------- Historique des conversations ---------- */
@@ -1513,8 +1540,44 @@ kbd {
 .chat-history {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.history-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+}
+
+.history-head h2 {
+  font-size: var(--step-0);
+  white-space: nowrap;
+}
+
+.chat-history.is-collapsed .history-head {
+  flex-direction: column;
+}
+
+.icon-btn-plain {
+  color: var(--ink-2);
+}
+
+.icon-btn-plain:hover {
+  background: var(--paper-sunk);
+  color: var(--ink);
+}
+
+.history-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  overflow-y: auto;
 }
 
 .history-group {
@@ -1590,8 +1653,9 @@ kbd {
 .chat {
   display: flex;
   flex-direction: column;
-  /* Hauteur fixe : seule la conversation défile, le champ de saisie reste visible. */
-  height: min(72dvh, 760px);
+  /* Hauteur fixe (toute la place disponible) : seule la conversation défile, le champ de saisie reste visible. */
+  height: 100%;
+  min-height: 0;
   border: 1px solid var(--rule);
   border-radius: 10px;
   background: var(--paper-hi);
@@ -1807,12 +1871,24 @@ kbd {
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1180px) {
-  /* Le contexte budget passe sous la conversation. */
+  /* Le contexte budget passe sous la conversation : la page redevient défilante. */
   .chat-grid {
-    grid-template-columns: minmax(200px, 230px) minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
   }
   .chat-grid > .aside {
     grid-column: 2;
+    max-height: none;
+  }
+  .assistant-page {
+    height: auto;
+    min-height: 0;
+  }
+  .assistant-page .chat-grid {
+    align-items: start;
+  }
+  .chat,
+  .chat-history {
+    height: min(72dvh, 760px);
   }
 }
 
@@ -1829,9 +1905,14 @@ kbd {
   .chat-grid > .aside {
     grid-column: auto;
   }
-  .chat-history .history-group ul {
-    max-height: 30dvh;
-    overflow-y: auto;
+  /* Une seule colonne : l'historique prend toute la largeur, réduit il devient une barre. */
+  .chat-history {
+    width: auto !important;
+    height: auto;
+    max-height: 40dvh;
+  }
+  .chat-history.is-collapsed .history-head {
+    flex-direction: row;
   }
 }
 

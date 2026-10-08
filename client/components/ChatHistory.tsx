@@ -1,9 +1,10 @@
 "use client";
 
-import { Pin, PinOff, SquarePen, Trash2 } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Pin, PinOff, SquarePen, Trash2 } from "lucide-react";
+import { MotionConfig, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { deleteConversation, pinConversation } from "@/lib/actions";
 import type { ConversationSummary } from "@/lib/db";
@@ -58,20 +59,76 @@ function Group({ title, items, activeId }: { title: string; items: ConversationS
   );
 }
 
-export function ChatHistory({ conversations, activeId }: { conversations: ConversationSummary[]; activeId: string }) {
+// Cookie lu par app/assistant/page.tsx (même nom) : le serveur rend directement le bon état, sans flash.
+const HISTORY_COOKIE = "sw-history";
+
+const WIDTH = { open: 248, collapsed: 52 };
+const spring = { type: "spring", stiffness: 420, damping: 38 } as const;
+
+export function ChatHistory({
+  conversations,
+  activeId,
+  initialCollapsed,
+}: {
+  conversations: ConversationSummary[];
+  activeId: string;
+  initialCollapsed: boolean;
+}) {
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   const pinned = conversations.filter((c) => c.pinned);
   const recent = conversations.filter((c) => !c.pinned);
+
+  function toggle() {
+    const next = !collapsed;
+    setCollapsed(next);
+    document.cookie = `${HISTORY_COOKIE}=${next ? "collapsed" : "open"}; path=/; max-age=31536000; samesite=lax`;
+  }
+
+  const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
+  const toggleLabel = collapsed ? "Afficher l’historique" : "Réduire l’historique";
+
   return (
-    <nav className="chat-history" aria-label="Historique des conversations">
-      <Link href="/assistant" className="btn btn-primary">
-        <SquarePen size={16} aria-hidden /> Nouvelle conversation
-      </Link>
-      {pinned.length > 0 && <Group title="Épinglées" items={pinned} activeId={activeId} />}
-      {recent.length > 0 ? (
-        <Group title="Récentes" items={recent} activeId={activeId} />
-      ) : (
-        pinned.length === 0 && <p className="form-note">Tes conversations apparaîtront ici.</p>
-      )}
-    </nav>
+    <MotionConfig reducedMotion="user" transition={spring}>
+      <motion.nav
+        className={`chat-history${collapsed ? " is-collapsed" : ""}`}
+        aria-label="Historique des conversations"
+        initial={false}
+        animate={{ width: collapsed ? WIDTH.collapsed : WIDTH.open }}
+      >
+        <div className="history-head">
+          <button
+            type="button"
+            className="icon-btn icon-btn-plain"
+            onClick={toggle}
+            aria-expanded={!collapsed}
+            aria-label={toggleLabel}
+            title={toggleLabel}
+          >
+            <ToggleIcon size={18} aria-hidden />
+          </button>
+          {collapsed ? (
+            <Link href="/assistant" className="icon-btn icon-btn-plain" aria-label="Nouvelle conversation" title="Nouvelle conversation">
+              <SquarePen size={17} aria-hidden />
+            </Link>
+          ) : (
+            <h2>Conversations</h2>
+          )}
+        </div>
+
+        {!collapsed && (
+          <div className="history-body">
+            <Link href="/assistant" className="btn btn-primary">
+              <SquarePen size={16} aria-hidden /> Nouvelle conversation
+            </Link>
+            {pinned.length > 0 && <Group title="Épinglées" items={pinned} activeId={activeId} />}
+            {recent.length > 0 ? (
+              <Group title="Récentes" items={recent} activeId={activeId} />
+            ) : (
+              pinned.length === 0 && <p className="form-note">Tes conversations apparaîtront ici.</p>
+            )}
+          </div>
+        )}
+      </motion.nav>
+    </MotionConfig>
   );
 }
