@@ -1,0 +1,31 @@
+# Environnement virtuel
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Secrets (GOOGLE_API_KEY) — seul l'exemple est versionné
+.env
+.env.*
+!.env.example
+
+# Bases locales (sessions agno, etc.)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
