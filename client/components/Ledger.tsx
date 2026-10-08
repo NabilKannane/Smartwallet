@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { Transaction } from "@/lib/db";
-import { money, signed } from "@/lib/finance";
+import { MASQUE, moneyOr, signed } from "@/lib/finance";
 
 import { CategoryPlate } from "./CategoryPlate";
 import { Cur } from "./Currency";
@@ -13,7 +13,7 @@ type Key = "date" | "montant";
 
 const dateFmt = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-export function Ledger({ rows }: { rows: Transaction[] }) {
+export function Ledger({ rows, masque }: { rows: Transaction[]; masque: boolean }) {
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 }>({ key: "date", dir: -1 });
 
   const sorted = useMemo(() => {
@@ -60,7 +60,7 @@ export function Ledger({ rows }: { rows: Transaction[] }) {
                 </td>
                 <td>{t.description || <span className="muted">—</span>}</td>
                 <td className={`r num${t.type === "Revenu" ? " text-gain" : ""}`}>
-                  {signed(t.type === "Revenu" ? t.montant : -t.montant)}
+                  {masque ? MASQUE : signed(t.type === "Revenu" ? t.montant : -t.montant)}
                 </td>
               </tr>
             );
@@ -69,7 +69,10 @@ export function Ledger({ rows }: { rows: Transaction[] }) {
       </table>
       <p className="scale-note">
         {rows.length} {rows.length > 1 ? "lignes" : "ligne"} · total dépenses{" "}
-        <span className="num">{money(rows.filter((r) => r.type === "Dépense").reduce((s, r) => s + r.montant, 0))} <Cur /></span>
+        <span className="num">{moneyOr(
+            masque,
+            rows.filter((r) => r.type === "Dépense").reduce((s, r) => s + r.montant, 0),
+          )} <Cur /></span>
       </p>
     </div>
   );
