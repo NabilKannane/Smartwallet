@@ -228,14 +228,41 @@ export function formatContext(
 
 export type Verdict = "Acheter" | "Attendre" | "Éviter";
 
-/** Le dernier des trois mots-clés cités dans la réponse est la recommandation. */
-export function extractVerdict(reply: string): Verdict | null {
-  const re = /(?<!\p{L})(acheter|attendre|[ée]viter)(?!\p{L})/giu;
-  let last: string | null = null;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(reply))) last = m[1].toLowerCase();
-  if (!last) return null;
-  if (last === "acheter") return "Acheter";
-  if (last === "attendre") return "Attendre";
+const KEYWORD = "(acheter|attendre|[ée]viter)(?!\\p{L})(?!\\s*(?:[/,|]|ou\\s))";
+// Mot-clé mis en avant (**Attendre**) ou annoncé (« Recommandation : Attendre »).
+const STRONG = [
+  new RegExp(`(?:\\*\\*|__)\\s*${KEYWORD}\\s*[.!]?\\s*(?:\\*\\*|__)`, "giu"),
+  new RegExp(`(?:recommandation|verdict|conseil|décision)[^\\n:]*:\\s*[*_]*\\s*${KEYWORD}`, "giu"),
+];
+const ANY = /(?<!\p{L})(acheter|attendre|[ée]viter)(?!\p{L})/giu;
+
+function toVerdict(word: string): Verdict {
+  const w = word.toLowerCase();
+  if (w === "acheter") return "Acheter";
+  if (w === "attendre") return "Attendre";
   return "Éviter";
+}
+
+/**
+ * Recommandation finale de l'assistant, ou null s'il n'a pas tranché.
+ * Une phrase qui cite plusieurs options (« acheter, attendre ou éviter ») n'est pas un verdict.
+ */
+export function extractVerdict(reply: string): Verdict | null {
+  let strong: { index: number; word: string } | null = null;
+  for (const re of STRONG) {
+    for (const m of reply.matchAll(re)) {
+      if (!strong || m.index! > strong.index) strong = { index: m.index!, word: m[1] };
+    }
+  }
+  if (strong) return toVerdict(strong.word);
+
+  // L'assistant termine par une question : il attend une précision avant de conclure.
+  if (reply.trim().endsWith("?")) return null;
+
+  const sentences = reply.split(/(?<=[.!?])\s+|\n+/);
+  for (let i = sentences.length - 1; i >= 0; i--) {
+    const found = new Set([...sentences[i].matchAll(ANY)].map((m) => toVerdict(m[1])));
+    if (found.size === 1) return [...found][0];
+  }
+  return null;
 }

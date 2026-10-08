@@ -6,6 +6,7 @@ import { useActionState, useEffect, useRef, useState, useTransition } from "reac
 import { addFixed, deleteFixed, editFixed, saveSalary, type ActionResult } from "@/lib/actions";
 import type { FixedItem } from "@/lib/db";
 import { CATEGORIES_FIXES } from "@/lib/finance";
+import { submitKeepingValues } from "@/lib/form";
 
 import { CategoryPlate } from "./CategoryPlate";
 
@@ -28,7 +29,7 @@ export function SalaryForm({ salaire }: { salaire: number }) {
   }, [state]);
 
   return (
-    <form action={action} className="salary-form" onChange={() => setDirty(true)}>
+    <form onSubmit={submitKeepingValues(action)} className="salary-form" onChange={() => setDirty(true)}>
       <label className="field">
         <span>Salaire mensuel net (€)</span>
         <input className="input num" name="salaire" defaultValue={salaire ? toInput(salaire) : ""} placeholder="0,00" required {...amountProps} />
@@ -59,7 +60,7 @@ function FixedRow({ item }: { item: FixedItem }) {
         <CategoryPlate categorie={item.categorie} hideName />
       </td>
       <td>
-        <form id={formId} action={action} onChange={() => setDirty(true)}>
+        <form id={formId} onSubmit={submitKeepingValues(action)} onChange={() => setDirty(true)}>
           <input type="hidden" name="id" value={item.id} />
         </form>
         <input form={formId} className="input" name="nom" defaultValue={item.nom} aria-label="Nom" required onChange={() => setDirty(true)} />
@@ -116,7 +117,7 @@ function AddFixedRow() {
     <tr className="add-row">
       <td />
       <td>
-        <form id="fixed-new" ref={formRef} action={action} />
+        <form id="fixed-new" ref={formRef} onSubmit={submitKeepingValues(action)} />
         <input ref={nameRef} form="fixed-new" className="input" name="nom" placeholder="Loyer, électricité, mutuelle…" aria-label="Nom de la nouvelle charge" required />
         {state && !state.ok && <span className="form-error">{state.error}</span>}
       </td>

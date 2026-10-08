@@ -40,6 +40,7 @@ export function Chat({ suggestions }: { suggestions: string[] }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [restored, setRestored] = useState(false);
   const sessionId = useSessionId();
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -51,16 +52,20 @@ export function Chat({ suggestions }: { suggestions: string[] }) {
     } catch {
       /* rien à restaurer */
     }
+    setRestored(true);
   }, []);
 
   useEffect(() => {
-    try {
-      sessionStorage.setItem(STORE, JSON.stringify(msgs));
-    } catch {
-      /* ignore */
+    // Avant la restauration, msgs vaut [] : l'écrire effacerait la conversation sauvegardée.
+    if (restored) {
+      try {
+        sessionStorage.setItem(STORE, JSON.stringify(msgs));
+      } catch {
+        /* ignore */
+      }
     }
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [msgs, busy]);
+  }, [msgs, busy, restored]);
 
   const ask = useCallback(
     async (question: string, retry = false) => {
@@ -121,12 +126,12 @@ export function Chat({ suggestions }: { suggestions: string[] }) {
                       <strong>Le service IA ne répond pas.</strong> Lance-le dans un terminal, puis réessaie :
                     </p>
                     <pre className="m-0 overflow-x-auto rounded-ticket bg-plate p-3 font-mono text-[0.8rem] text-vfd">
-                      {"cd ai-service\n.venv\\Scripts\\activate\npython agent.py"}
+                      {"cd agent\n.venv\\Scripts\\activate\npython agent.py"}
                     </pre>
                   </>
                 ) : (
                   <p>
-                    <strong>Le service IA a renvoyé une erreur.</strong> Vérifie ta clé GOOGLE_API_KEY dans ai-service/.env, puis réessaie.
+                    <strong>Le service IA a renvoyé une erreur.</strong> Vérifie ta clé GOOGLE_API_KEY dans agent/.env, puis réessaie.
                   </p>
                 )}
                 <div>

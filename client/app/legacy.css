@@ -145,22 +145,37 @@ p {
 /* ---------- Coquille ---------- */
 
 .shell {
-  background: linear-gradient(to right, var(--rail) var(--rail-w), var(--paper) 0);
+  background: var(--paper);
   display: grid;
-  grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  /* La largeur du rail est animée par Motion (components/Rail.tsx). */
+  grid-template-columns: auto minmax(0, 1fr);
   min-height: 100dvh;
 }
 
 .rail {
   position: sticky;
   top: 0;
+  width: var(--rail-w);
   height: 100dvh;
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
   padding: var(--space-5) var(--space-4);
+  overflow: hidden;
   background: var(--rail);
   color: var(--rail-ink);
+}
+
+.rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+}
+
+.brand-wrap {
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .brand {
@@ -175,8 +190,27 @@ p {
   text-decoration: none;
 }
 
-.brand svg {
-  color: var(--vfd);
+.rail-toggle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--rail-muted);
+  cursor: pointer;
+  transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+
+.rail-toggle:hover {
+  background: var(--rail-2);
+  color: var(--rail-ink);
+}
+
+.rail-toggle:focus-visible {
+  outline-color: var(--vfd);
 }
 
 .nav {
@@ -194,7 +228,12 @@ p {
   color: var(--rail-muted);
   text-decoration: none;
   font-weight: 600;
+  white-space: nowrap;
   transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+
+.nav a svg {
+  flex: none;
 }
 
 .nav a:hover {
@@ -215,9 +254,13 @@ p {
   outline-color: var(--vfd);
 }
 
-.rail-readout {
+.rail-readout-wrap {
   margin-top: auto;
+}
+
+.rail-readout {
   display: grid;
+  white-space: nowrap;
   gap: 2px;
   padding: var(--space-3);
   border-radius: var(--radius);
@@ -1669,15 +1712,20 @@ kbd {
     position: fixed;
     inset: auto 0 0 0;
     z-index: 30;
+    width: auto !important;
     height: auto;
     flex-direction: row;
     gap: 0;
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
   }
 
-  .brand,
-  .rail-readout {
+  .rail-head,
+  .rail-readout-wrap {
     display: none;
+  }
+
+  .nav-label {
+    opacity: 1 !important;
   }
 
   .nav {
