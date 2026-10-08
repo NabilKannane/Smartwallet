@@ -179,6 +179,22 @@ describe("formatContext", () => {
     expect(formatContext(8000, fixed, month)).toContain("Salaire mensuel net : 8000.00 €");
   });
 
+  it("transmet la wishlist à l'assistant", () => {
+    const wishlist = [
+      { nom: "Vélo", prix: 1500, priorite: "Haute", note: "électrique" },
+      { nom: "Casque", prix: 300, priorite: "Basse", note: null },
+    ];
+    const ctx = formatContext(8000, fixed, month, "MAD", wishlist);
+    expect(ctx).toContain("Achats prévus (wishlist) :");
+    expect(ctx).toContain("  - Vélo : 1500.00 DH (priorité haute) — électrique");
+    expect(ctx).toContain("  - Casque : 300.00 DH (priorité basse)");
+    expect(ctx).toContain("Total de la wishlist : 1800.00 DH");
+  });
+
+  it("n'ajoute rien quand la wishlist est vide", () => {
+    expect(formatContext(8000, fixed, month, "MAD", [])).not.toContain("wishlist");
+  });
+
   it("signale l'absence de charges fixes", () => {
     expect(formatContext(8000, [], month)).toContain("Charges fixes mensuelles : aucune renseignée");
   });
