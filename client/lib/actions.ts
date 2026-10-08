@@ -1,0 +1,97 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import {
+  insertFixedItem,
+  insertTransaction,
+  removeFixedItem,
+  removeTransaction,
+  setSetting,
+  updateFixedItem,
+  type Transaction,
+} from "./db";
+import { CATEGORIES_DEPENSE, CATEGORIES_FIXES, CATEGORIES_REVENU } from "./finance";
+
+export type ActionResult = { ok: true; id?: number } | { ok: false; error: string };
+
+function parseAmount(raw: FormDataEntryValue | null): number {
+  if (typeof raw !== "string") return NaN;
+  return Number(raw.replace(/\s/g, "").replace(",", "."));
+}
+
+function refreshAll() {
+  revalidatePath("/", "layout");
+}
+
+// --- Transactions ---
+
+export async function addTransaction(_: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const type = form.get("type") === "Revenu" ? "Revenu" : "Dépense";
+  const categorie = String(form.get("categorie") ?? "");
+  const description = String(form.get("description") ?? "").trim() || null;
+  const date = String(form.get("date") ?? "");
+  const montant = parseAmount(form.get("montant"));
+
+  const allowed: readonly string[] = type === "Revenu" ? CATEGORIES_REVENU : CATEGORIES_DEPENSE;
+  if (!allowed.includes(categorie)) return { ok: false, error: "Choisis une catégorie." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: "La date est invalide." };
+  if (!Number.isFinite(montant) || montant <= 0) return { ok: false, error: "Le montant doit être supérieur à 0." };
+
+  const id = await insertTransaction({ date, type, categorie, description, montant: Math.round(montant * 100) / 100 });
+  refreshAll();
+  return { ok: true, id };
+}
+
+export async function deleteTransaction(id: number): Promise<Transaction | null> {
+  const row = await removeTransaction(id);
+  refreshAll();
+  return row ?? null;
+}
+
+export async function restoreTransaction(t: Transaction): Promise<void> {
+  await insertTransaction(t);
+  refreshAll();
+}
+
+// --- Budget ---
+
+export async function saveSalary(_: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const v = parseAmount(form.get("salaire"));
+  if (!Number.isFinite(v) || v < 0) return { ok: false, error: "Indique un salaire positif ou nul." };
+  await setSetting("salaire_mensuel", String(v));
+  refreshAll();
+  return { ok: true };
+}
+
+function readFixed(form: FormData): { nom: string; categorie: string; montant: number } | string {
+  const nom = String(form.get("nom") ?? "").trim();
+  const categorie = String(form.get("categorie") ?? "");
+  const montant = parseAmount(form.get("montant"));
+  if (!nom) return "Donne un nom à cette charge.";
+  if (!(CATEGORIES_FIXES as readonly string[]).includes(categorie)) return "Choisis une catégorie.";
+  if (!Number.isFinite(montant) || montant <= 0) return "Le montant doit être supérieur à 0.";
+  return { nom, categorie, montant: Math.round(montant * 100) / 100 };
+}
+
+export async function addFixed(_: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const f = readFixed(form);
+  if (typeof f === "string") return { ok: false, error: f };
+  await insertFixedItem(f.nom, f.categorie, f.montant);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function editFixed(_: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const id = Number(form.get("id"));
+  const f = readFixed(form);
+  if (typeof f === "string") return { ok: false, error: f };
+  await updateFixedItem(id, f.nom, f.categorie, f.montant);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function deleteFixed(id: number): Promise<void> {
+  await removeFixedItem(id);
+  refreshAll();
+}
