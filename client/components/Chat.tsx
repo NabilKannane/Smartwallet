@@ -126,12 +126,12 @@ export function Chat({ suggestions }: { suggestions: string[] }) {
                       <strong>Le service IA ne répond pas.</strong> Lance-le dans un terminal, puis réessaie :
                     </p>
                     <pre className="m-0 overflow-x-auto rounded-ticket bg-plate p-3 font-mono text-[0.8rem] text-vfd">
-                      {"cd ai-service\n.venv\\Scripts\\activate\npython agent.py"}
+                      {"cd agent\n.venv\\Scripts\\activate\npython agent.py"}
                     </pre>
                   </>
                 ) : (
                   <p>
-                    <strong>Le service IA a renvoyé une erreur.</strong> Vérifie ta clé GOOGLE_API_KEY dans ai-service/.env, puis réessaie.
+                    <strong>Le service IA a renvoyé une erreur.</strong> Vérifie ta clé GOOGLE_API_KEY dans agent/.env, puis réessaie.
                   </p>
                 )}
                 <div>
