@@ -175,10 +175,6 @@ p {
   text-decoration: none;
 }
 
-.brand svg {
-  color: var(--vfd);
-}
-
 .nav {
   display: flex;
   flex-direction: column;

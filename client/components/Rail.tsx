@@ -20,7 +20,6 @@ export function Rail({ reste }: { reste: number | null }) {
   return (
     <aside className="rail">
       <Link href="/" className="brand">
-        <ReceiptText size={22} strokeWidth={2.25} aria-hidden />
         SmartWallet
       </Link>
 
