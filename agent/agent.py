@@ -1,61 +1,30 @@
-"""SmartWallet - service IA (FastAPI) qui aide à décider d'un achat."""
-
 import os
-
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from pydantic import BaseModel
 
 from agno.agent import Agent
 from agno.models.google import Gemini
 
-load_dotenv()
+from agent_db import db, check_db  # noqa: F401 (check_db réexporté pour main.py)
+from tools import lister_wishlist, ajouter_wishlist
 
-INSTRUCTIONS = [
-    "Tu es un conseiller financier personnel qui aide l'utilisateur à décider s'il doit faire un achat.",
+# Instructions pour l'agent
+agent_instruction = [
+    "Tu es un conseiller financier personnel qui s'appel CO-WALLET et aide l'utilisateur à décider s'il doit faire un achat.",
+    "La personne qui te contacte est inconnue : tu ne connais ni son nom, ni son âge. La seule information que tu as sur elle est qu'elle est marocaine. Ne suppose rien d'autre à son sujet.",
+    "Exprime les montants en dirhams (MAD) et tiens compte du contexte marocain (coût de la vie, prix locaux, habitudes de paiement).",
     "Appuie-toi sur le contexte financier fourni (salaire, dépenses fixes, factures, solde actuel) pour évaluer l'impact de l'achat sur son budget.",
     "Termine toujours par une recommandation claire : Acheter / Attendre / Éviter, avec une justification courte basée sur les chiffres.",
     "Si une information essentielle manque pour juger, pose une question précise avant de conclure.",
     "Réponds en français, de façon concise et bienveillante, sans jargon inutile.",
+    "N'ajoute un article à la wishlist que si l'utilisateur le demande clairement."
 ]
 
+# Création de l'agent avec le modèle Gemini et les instructions définies
 agent = Agent(
     model=Gemini(api_key=os.getenv("GOOGLE_API_KEY")),
-    instructions=INSTRUCTIONS,
+    instructions=agent_instruction,
     markdown=True,
+    db=db,
+    tools= [lister_wishlist, ajouter_wishlist],
+    add_history_to_context=True,
+    add_datetime_to_context=True,
 )
-
-app = FastAPI(title="SmartWallet - AI Service")
-
-
-class ChatRequest(BaseModel):
-    message: str
-    context: str = ""
-    session_id: str = "default"
-
-
-class ChatResponse(BaseModel):
-    reply: str
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-
-@app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest) -> ChatResponse:
-    prompt = req.message
-    if req.context:
-        prompt = (
-            f"Contexte financier de l'utilisateur :\n{req.context}\n\n"
-            f"Question de l'utilisateur :\n{req.message}"
-        )
-    result = agent.run(prompt, session_id=req.session_id)
-    return ChatResponse(reply=result.content)
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
