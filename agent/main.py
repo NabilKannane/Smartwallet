@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from agno.run.base import RunStatus
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from agent import agent, check_db
@@ -32,7 +33,16 @@ def chat(req: ChatRequest) -> ChatResponse:
             f"Contexte financier de l'utilisateur :\n{req.context}\n\n"
             f"Question de l'utilisateur :\n{req.message}"
         )
-    result = agent.run(prompt, session_id=req.session_id)
+    try:
+        result = agent.run(prompt, session_id=req.session_id)
+    except Exception as e:
+        print(f"❌ Erreur de l'agent : {e}")
+        raise HTTPException(status_code=503, detail="model_unavailable")
+    # Après les tentatives, une erreur du modèle (ex. 503 surcharge) revient dans le contenu :
+    # on ne la renvoie pas comme une réponse de l'assistant.
+    if result.status == RunStatus.error:
+        print(f"❌ Erreur du modèle : {result.content}")
+        raise HTTPException(status_code=503, detail="model_unavailable")
     return ChatResponse(reply=result.content)
 
 

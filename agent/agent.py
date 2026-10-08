@@ -20,7 +20,13 @@ agent_instruction = [
 
 # Création de l'agent avec le modèle Gemini et les instructions définies
 agent = Agent(
-    model=Gemini(api_key=os.getenv("GOOGLE_API_KEY")),
+    # Gemini renvoie parfois 503 (modèle surchargé) : on réessaie 3 fois en espaçant (2 s, 4 s, 8 s).
+    model=Gemini(
+        api_key=os.getenv("GOOGLE_API_KEY"),
+        retries=3,
+        delay_between_retries=2,
+        exponential_backoff=True,
+    ),
     instructions=agent_instruction,
     markdown=True,
     db=db,

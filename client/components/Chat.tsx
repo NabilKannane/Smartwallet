@@ -10,7 +10,13 @@ import type { Verdict } from "@/lib/finance";
 
 import { useSymbole } from "./Currency";
 
-type Msg = ChatMessage | { role: "error"; kind: "unreachable" | "upstream"; question: string };
+type ErrorKind = "unreachable" | "busy" | "upstream";
+
+type Msg = ChatMessage | { role: "error"; kind: ErrorKind; question: string };
+
+function errorKind(code: unknown): ErrorKind {
+  return code === "unreachable" || code === "busy" ? code : "upstream";
+}
 
 const VERDICT_NOTE: Record<Verdict, string> = {
   Acheter: "Ton budget l’encaisse.",
@@ -61,7 +67,7 @@ export function Chat({
         });
         const data = await res.json();
         if (!res.ok) {
-          setMsgs((m) => [...m, { role: "error", kind: data.error === "unreachable" ? "unreachable" : "upstream", question: q }]);
+          setMsgs((m) => [...m, { role: "error", kind: errorKind(data.error), question: q }]);
         } else {
           setMsgs((m) => [...m, { role: "assistant", text: data.reply, verdict: data.verdict }]);
           // L'échange est enregistré : on fixe la conversation dans l'URL et on met l'historique à jour.
@@ -110,6 +116,11 @@ export function Chat({
                       {"cd agent\n.venv\\Scripts\\activate\npython main.py"}
                     </pre>
                   </>
+                ) : m.kind === "busy" ? (
+                  <p>
+                    <strong>Le modèle IA est surchargé en ce moment.</strong> C’est temporaire : réessaie dans quelques
+                    instants.
+                  </p>
                 ) : (
                   <p>
                     <strong>Le service IA a renvoyé une erreur.</strong> Vérifie ta clé GOOGLE_API_KEY dans agent/.env, puis réessaie.

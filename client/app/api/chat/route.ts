@@ -23,6 +23,8 @@ export async function POST(req: Request) {
   } catch {
     return Response.json({ error: "unreachable" }, { status: 503 });
   }
+  // 503 : le modèle Gemini est surchargé (temporaire), le service lui-même fonctionne.
+  if (res.status === 503) return Response.json({ error: "busy" }, { status: 503 });
   if (!res.ok) return Response.json({ error: "upstream", status: res.status }, { status: 502 });
 
   const { reply } = (await res.json()) as { reply: string };
