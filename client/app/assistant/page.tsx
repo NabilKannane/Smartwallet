@@ -1,25 +1,32 @@
+import { randomUUID } from "node:crypto";
+
 import { ChevronDown } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { MasqueToggle } from "@/components/BudgetForms";
 import { Chat, ServiceStatus } from "@/components/Chat";
-import { getDevise, listWishlist } from "@/lib/db";
-import { DEVISES, moneyOr, monthKey } from "@/lib/finance";
+import { ChatHistory } from "@/components/ChatHistory";
+import { getConversation, getDevise, listConversations, listWishlist } from "@/lib/db";
+import { DEVISES, isConversationId, moneyOr, monthKey } from "@/lib/finance";
 import { isMasque } from "@/lib/masque";
 import { currentContext, loadMonth } from "@/lib/summary";
 
 export const metadata: Metadata = { title: "Assistant" };
 
-export default async function Assistant({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q } = await searchParams;
-  const [{ salaire, month }, context, devise, masque, wishlist] = await Promise.all([
+export default async function Assistant({ searchParams }: { searchParams: Promise<{ q?: string; c?: string }> }) {
+  const { q, c } = await searchParams;
+  const [{ salaire, month }, context, devise, masque, wishlist, conversations, conversation] = await Promise.all([
     loadMonth(monthKey(new Date())),
     currentContext(),
     getDevise(),
     isMasque(),
     listWishlist(),
+    listConversations(),
+    isConversationId(c) ? getConversation(c) : undefined,
   ]);
+  // Sans conversation existante dans l'URL, on en démarre une nouvelle.
+  const conversationId = conversation?.id ?? randomUUID();
   const symbole = DEVISES[devise].symbole;
   const r = Math.max(0, month.reste);
   // La wishlist est triée par priorité : on propose d'abord l'achat le plus important.
@@ -47,7 +54,15 @@ export default async function Assistant({ searchParams }: { searchParams: Promis
       </header>
 
       <div className="chat-grid">
-        <Chat suggestions={suggestions} initialQuestion={typeof q === "string" ? q.slice(0, 500) : ""} />
+        <ChatHistory conversations={conversations} activeId={conversationId} />
+
+        <Chat
+          key={conversationId}
+          conversationId={conversationId}
+          initialMessages={conversation?.messages ?? []}
+          suggestions={suggestions}
+          initialQuestion={!conversation && typeof q === "string" ? q.slice(0, 500) : ""}
+        />
 
         <aside className="aside">
           <section className="slip" aria-labelledby="ctx-reste">

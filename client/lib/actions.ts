@@ -6,15 +6,24 @@ import {
   insertFixedItem,
   insertTransaction,
   insertWish,
+  removeConversation,
   removeFixedItem,
   removeTransaction,
   removeWish,
+  setConversationPinned,
   setSetting,
   updateFixedItem,
   updateWish,
   type Transaction,
 } from "./db";
-import { CATEGORIES_DEPENSE, CATEGORIES_FIXES, CATEGORIES_REVENU, parseDevise, PRIORITES } from "./finance";
+import {
+  CATEGORIES_DEPENSE,
+  CATEGORIES_FIXES,
+  CATEGORIES_REVENU,
+  isConversationId,
+  parseDevise,
+  PRIORITES,
+} from "./finance";
 
 export type ActionResult = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -139,4 +148,18 @@ export async function editWish(_: ActionResult | null, form: FormData): Promise<
 export async function deleteWish(id: number): Promise<void> {
   await removeWish(id);
   refreshAll();
+}
+
+// --- Conversations ---
+
+export async function pinConversation(id: string, pinned: boolean): Promise<void> {
+  if (!isConversationId(id)) return;
+  await setConversationPinned(id, pinned);
+  revalidatePath("/assistant");
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  if (!isConversationId(id)) return;
+  await removeConversation(id);
+  revalidatePath("/assistant");
 }

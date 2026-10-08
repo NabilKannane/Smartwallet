@@ -1,19 +1,16 @@
 "use client";
 
 import { ArrowUp, RotateCcw } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 
+import type { ChatMessage } from "@/lib/db";
 import type { Verdict } from "@/lib/finance";
 
 import { useSymbole } from "./Currency";
 
-type Msg =
-  | { role: "user"; text: string }
-  | { role: "assistant"; text: string; verdict: Verdict | null }
-  | { role: "error"; kind: "unreachable" | "upstream"; question: string };
-
-const STORE = "fm-chat";
+type Msg = ChatMessage | { role: "error"; kind: "unreachable" | "upstream"; question: string };
 
 const VERDICT_NOTE: Record<Verdict, string> = {
   Acheter: "Ton budget l’encaisse.",
@@ -21,54 +18,33 @@ const VERDICT_NOTE: Record<Verdict, string> = {
   Éviter: "Ce mois-ci, ça ferait mal.",
 };
 
-function useSessionId() {
-  const [id, setId] = useState("web");
-  useEffect(() => {
-    try {
-      let v = sessionStorage.getItem("fm-session");
-      if (!v) {
-        v = `web-${Math.random().toString(36).slice(2, 10)}`;
-        sessionStorage.setItem("fm-session", v);
-      }
-      setId(v);
-    } catch {
-      /* stockage indisponible : session par défaut */
-    }
-  }, []);
-  return id;
-}
-
-export function Chat({ suggestions, initialQuestion = "" }: { suggestions: string[]; initialQuestion?: string }) {
-  const [msgs, setMsgs] = useState<Msg[]>([]);
+export function Chat({
+  conversationId: sessionId,
+  initialMessages,
+  suggestions,
+  initialQuestion = "",
+}: {
+  conversationId: string;
+  initialMessages: ChatMessage[];
+  suggestions: string[];
+  initialQuestion?: string;
+}) {
+  const router = useRouter();
+  const [msgs, setMsgs] = useState<Msg[]>(initialMessages);
   const symbole = useSymbole();
   const [draft, setDraft] = useState(initialQuestion);
   const [busy, setBusy] = useState(false);
-  const [restored, setRestored] = useState(false);
-  const sessionId = useSessionId();
-  const endRef = useRef<HTMLDivElement>(null);
+  const transcriptRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const firstScroll = useRef(true);
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(STORE);
-      if (raw) setMsgs(JSON.parse(raw));
-    } catch {
-      /* rien à restaurer */
-    }
-    setRestored(true);
-  }, []);
-
-  useEffect(() => {
-    // Avant la restauration, msgs vaut [] : l'écrire effacerait la conversation sauvegardée.
-    if (restored) {
-      try {
-        sessionStorage.setItem(STORE, JSON.stringify(msgs));
-      } catch {
-        /* ignore */
-      }
-    }
-    endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [msgs, busy, restored]);
+    // On défile dans la conversation seulement, pas la page. À l'ouverture : directement en bas.
+    const el = transcriptRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: firstScroll.current ? "instant" : "smooth" });
+    firstScroll.current = false;
+  }, [msgs, busy]);
 
   const ask = useCallback(
     async (question: string, retry = false) => {
@@ -88,6 +64,8 @@ export function Chat({ suggestions, initialQuestion = "" }: { suggestions: strin
           setMsgs((m) => [...m, { role: "error", kind: data.error === "unreachable" ? "unreachable" : "upstream", question: q }]);
         } else {
           setMsgs((m) => [...m, { role: "assistant", text: data.reply, verdict: data.verdict }]);
+          // L'échange est enregistré : on fixe la conversation dans l'URL et on met l'historique à jour.
+          router.replace(`/assistant?c=${sessionId}`, { scroll: false });
         }
       } catch {
         setMsgs((m) => [...m, { role: "error", kind: "unreachable", question: q }]);
@@ -96,12 +74,12 @@ export function Chat({ suggestions, initialQuestion = "" }: { suggestions: strin
         inputRef.current?.focus();
       }
     },
-    [busy, sessionId],
+    [busy, sessionId, router],
   );
 
   return (
     <section className="chat" aria-label="Conversation avec l’assistant">
-      <div className="transcript" aria-live="polite">
+      <div ref={transcriptRef} className="transcript" aria-live="polite">
         {msgs.length === 0 && (
           <div className="a">
             <p>
@@ -129,7 +107,7 @@ export function Chat({ suggestions, initialQuestion = "" }: { suggestions: strin
                       <strong>Le service IA ne répond pas.</strong> Lance-le dans un terminal, puis réessaie :
                     </p>
                     <pre className="m-0 overflow-x-auto rounded-ticket bg-plate p-3 font-mono text-[0.8rem] text-vfd">
-                      {"cd agent\n.venv\\Scripts\\activate\npython agent.py"}
+                      {"cd agent\n.venv\\Scripts\\activate\npython main.py"}
                     </pre>
                   </>
                 ) : (
@@ -166,7 +144,6 @@ export function Chat({ suggestions, initialQuestion = "" }: { suggestions: strin
             <i /> L’assistant fait le calcul…
           </p>
         )}
-        <div ref={endRef} />
       </div>
 
       <form

@@ -2,7 +2,7 @@ import "server-only";
 
 import { neon } from "@neondatabase/serverless";
 
-import { parseDevise, type Devise } from "./finance";
+import { parseDevise, type Devise, type Verdict } from "./finance";
 
 /** Base Postgres hébergée sur Neon. Même schéma que l'ancienne base SQLite de l'app Streamlit. */
 if (!process.env.DATABASE_URL) {
@@ -47,6 +47,14 @@ async function createSchema() {
       key TEXT PRIMARY KEY,
       value TEXT
     )`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id TEXT PRIMARY KEY,
+      titre TEXT NOT NULL,
+      pinned BOOLEAN NOT NULL DEFAULT false,
+      messages JSONB NOT NULL DEFAULT '[]',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
 }
 
 /** Crée les tables une seule fois par processus, avant la première requête. */
@@ -82,6 +90,18 @@ export interface WishItem {
   prix: number;
   priorite: string;
   note: string | null;
+}
+
+export type ChatMessage = { role: "user"; text: string } | { role: "assistant"; text: string; verdict: Verdict | null };
+
+export interface ConversationSummary {
+  id: string;
+  titre: string;
+  pinned: boolean;
+}
+
+export interface Conversation extends ConversationSummary {
+  messages: ChatMessage[];
 }
 
 // --- Transactions ---
@@ -170,6 +190,40 @@ export async function updateWish(id: number, nom: string, prix: number, priorite
 export async function removeWish(id: number) {
   await ready();
   await sql`DELETE FROM wishlist WHERE id = ${id}`;
+}
+
+// --- Conversations de l'assistant ---
+
+export async function listConversations(): Promise<ConversationSummary[]> {
+  await ready();
+  return (await sql`
+    SELECT id, titre, pinned FROM conversations ORDER BY updated_at DESC LIMIT 100
+  `) as ConversationSummary[];
+}
+
+export async function getConversation(id: string): Promise<Conversation | undefined> {
+  await ready();
+  const [row] = await sql`SELECT id, titre, pinned, messages FROM conversations WHERE id = ${id}`;
+  return row as Conversation | undefined;
+}
+
+/** Ajoute des messages à une conversation, en la créant si besoin. Le titre n'est fixé qu'à la création. */
+export async function appendMessages(id: string, titre: string, messages: ChatMessage[]) {
+  await ready();
+  await sql`
+    INSERT INTO conversations (id, titre, messages) VALUES (${id}, ${titre}, ${JSON.stringify(messages)}::jsonb)
+    ON CONFLICT (id) DO UPDATE SET messages = conversations.messages || EXCLUDED.messages, updated_at = now()
+  `;
+}
+
+export async function setConversationPinned(id: string, pinned: boolean) {
+  await ready();
+  await sql`UPDATE conversations SET pinned = ${pinned} WHERE id = ${id}`;
+}
+
+export async function removeConversation(id: string) {
+  await ready();
+  await sql`DELETE FROM conversations WHERE id = ${id}`;
 }
 
 // --- Paramètres ---

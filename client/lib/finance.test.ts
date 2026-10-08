@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   computeMonth,
+  conversationTitle,
   countsInReste,
   daysInMonth,
   extractVerdict,
   formatContext,
+  isConversationId,
   MASQUE,
   money,
   moneyOr,
@@ -44,6 +46,22 @@ describe("extractVerdict", () => {
     "",
   ])("ne donne aucun verdict pour %j", (reply) => {
     expect(extractVerdict(reply)).toBeNull();
+  });
+});
+
+describe("conversations", () => {
+  it("n'accepte que des UUID comme identifiant", () => {
+    expect(isConversationId("3f2b8c1e-9a4d-4e7b-8c2f-1a2b3c4d5e6f")).toBe(true);
+    expect(isConversationId("web-abc123")).toBe(false);
+    expect(isConversationId("' OR 1=1 --")).toBe(false);
+    expect(isConversationId(undefined)).toBe(false);
+  });
+
+  it("titre : première question sur une ligne, coupée à 60 caractères", () => {
+    expect(conversationTitle("  Je peux acheter\n un vélo ?  ")).toBe("Je peux acheter un vélo ?");
+    const t = conversationTitle("a".repeat(100));
+    expect(t).toHaveLength(60);
+    expect(t.endsWith("…")).toBe(true);
   });
 });
 

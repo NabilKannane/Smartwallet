@@ -300,3 +300,14 @@ export function extractVerdict(reply: string): Verdict | null {
   }
   return null;
 }
+
+/** Identifiant de conversation généré par l'app (UUID), aussi utilisé comme session_id de l'agent. */
+export function isConversationId(v: unknown): v is string {
+  return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+}
+
+/** Titre d'une conversation : sa première question, sur une ligne, coupée à 60 caractères. */
+export function conversationTitle(question: string): string {
+  const t = question.replace(/\s+/g, " ").trim();
+  return t.length > 60 ? `${t.slice(0, 59).trimEnd()}…` : t;
+}

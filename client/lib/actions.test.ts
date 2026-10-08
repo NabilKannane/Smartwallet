@@ -11,9 +11,21 @@ vi.mock("./db", () => ({
   insertWish: vi.fn(),
   updateWish: vi.fn(),
   removeWish: vi.fn(),
+  setConversationPinned: vi.fn(),
+  removeConversation: vi.fn(),
 }));
 
-import { addFixed, addTransaction, addWish, editFixed, editWish, saveDevise, saveSalary } from "./actions";
+import {
+  addFixed,
+  addTransaction,
+  addWish,
+  deleteConversation,
+  editFixed,
+  editWish,
+  pinConversation,
+  saveDevise,
+  saveSalary,
+} from "./actions";
 import * as db from "./db";
 
 function form(fields: Record<string, string>): FormData {
@@ -140,5 +152,25 @@ describe("wishlist", () => {
       error: "Achat introuvable : recharge la page.",
     });
     expect(db.updateWish).not.toHaveBeenCalled();
+  });
+});
+
+describe("conversations", () => {
+  const id = "3f2b8c1e-9a4d-4e7b-8c2f-1a2b3c4d5e6f";
+
+  it("épingle, désépingle et supprime une conversation", async () => {
+    await pinConversation(id, true);
+    expect(db.setConversationPinned).toHaveBeenCalledWith(id, true);
+    await pinConversation(id, false);
+    expect(db.setConversationPinned).toHaveBeenCalledWith(id, false);
+    await deleteConversation(id);
+    expect(db.removeConversation).toHaveBeenCalledWith(id);
+  });
+
+  it("ignore un identifiant invalide", async () => {
+    await pinConversation("web-abc", true);
+    await deleteConversation("");
+    expect(db.setConversationPinned).not.toHaveBeenCalled();
+    expect(db.removeConversation).not.toHaveBeenCalled();
   });
 });
