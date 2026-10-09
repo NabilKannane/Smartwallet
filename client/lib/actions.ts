@@ -5,13 +5,25 @@ import { revalidatePath } from "next/cache";
 import {
   insertFixedItem,
   insertTransaction,
+  insertWish,
+  removeConversation,
   removeFixedItem,
   removeTransaction,
+  removeWish,
+  setConversationPinned,
   setSetting,
   updateFixedItem,
+  updateWish,
   type Transaction,
 } from "./db";
-import { CATEGORIES_DEPENSE, CATEGORIES_FIXES, CATEGORIES_REVENU, parseDevise } from "./finance";
+import {
+  CATEGORIES_DEPENSE,
+  CATEGORIES_FIXES,
+  CATEGORIES_REVENU,
+  isConversationId,
+  parseDevise,
+  PRIORITES,
+} from "./finance";
 
 export type ActionResult = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -100,4 +112,54 @@ export async function editFixed(_: ActionResult | null, form: FormData): Promise
 export async function deleteFixed(id: number): Promise<void> {
   await removeFixedItem(id);
   refreshAll();
+}
+
+// --- Wishlist ---
+
+function readWish(form: FormData): { nom: string; prix: number; priorite: string; note: string | null } | string {
+  const nom = String(form.get("nom") ?? "").trim();
+  const prix = parseAmount(form.get("prix"));
+  const priorite = String(form.get("priorite") ?? "");
+  const note = String(form.get("note") ?? "").trim() || null;
+  if (!nom) return "Donne un nom à cet achat.";
+  if (!Number.isFinite(prix) || prix <= 0) return "Le prix doit être supérieur à 0.";
+  if (!(PRIORITES as readonly string[]).includes(priorite)) return "Choisis une priorité.";
+  return { nom, prix: Math.round(prix * 100) / 100, priorite, note };
+}
+
+export async function addWish(_: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const w = readWish(form);
+  if (typeof w === "string") return { ok: false, error: w };
+  await insertWish(w.nom, w.prix, w.priorite, w.note);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function editWish(_: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const id = Number(form.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: "Achat introuvable : recharge la page." };
+  const w = readWish(form);
+  if (typeof w === "string") return { ok: false, error: w };
+  await updateWish(id, w.nom, w.prix, w.priorite, w.note);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function deleteWish(id: number): Promise<void> {
+  await removeWish(id);
+  refreshAll();
+}
+
+// --- Conversations ---
+
+export async function pinConversation(id: string, pinned: boolean): Promise<void> {
+  if (!isConversationId(id)) return;
+  await setConversationPinned(id, pinned);
+  revalidatePath("/assistant");
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  if (!isConversationId(id)) return;
+  await removeConversation(id);
+  revalidatePath("/assistant");
 }

@@ -1090,6 +1090,58 @@ kbd {
   }
 }
 
+/* ---------- Notifications (components/Toast.tsx) ---------- */
+
+.toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: max(var(--space-5), env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-4));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast-stack .toast {
+  position: static;
+  gap: var(--space-3);
+  padding: 8px 8px 8px 14px;
+  transform: none;
+  pointer-events: auto;
+  /* Entrée, sortie et réempilement animés par Motion (components/Toast.tsx). */
+  animation: none;
+}
+
+.toast-stack .toast-icon {
+  flex: none;
+  color: var(--vfd);
+}
+
+.toast-stack .toast a {
+  flex: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--vfd);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.toast-stack .toast a:hover {
+  background: var(--plate-2);
+}
+
+.toast-stack .toast .toast-close {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  color: var(--rail-muted);
+}
+
 /* ---------- Historique ---------- */
 
 .filters {
@@ -1462,19 +1514,203 @@ kbd {
   color: var(--red);
 }
 
+/* ---------- Wishlist ---------- */
+
+.wish-table td:first-child {
+  min-width: 12rem;
+}
+
+.wish-table .wish-note {
+  min-height: 30px;
+  padding-block: 4px;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.wish-table .add-row .wish-note {
+  margin-top: 6px;
+}
+
+.wish-ok,
+.wish-ko {
+  font-size: var(--step--1);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wish-ok {
+  color: var(--gain);
+}
+
+.wish-ko {
+  color: var(--red);
+}
+
+.icon-btn-ask:hover {
+  background: var(--paper-sunk);
+  color: var(--ink);
+}
+
 /* ---------- Assistant ---------- */
 
 .chat-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
-  gap: var(--space-6);
+  /* La largeur de l'historique est animée par Motion (components/ChatHistory.tsx). */
+  grid-template-columns: auto minmax(0, 1fr) minmax(240px, 300px);
+  gap: var(--space-5);
   align-items: start;
+}
+
+/* La page Assistant occupe toute la hauteur de l'écran : pas de vide sous la conversation. */
+@media (min-width: 1181px) {
+  .main:has(> .assistant-page) {
+    padding-bottom: var(--space-6);
+  }
+}
+
+.assistant-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 2 * var(--space-6));
+  min-height: 520px;
+}
+
+.assistant-page .chat-grid {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.chat-grid > .aside {
+  align-self: start;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+/* ---------- Historique des conversations ---------- */
+
+.chat-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.history-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+}
+
+.history-head h2 {
+  font-size: var(--step-0);
+  white-space: nowrap;
+}
+
+.chat-history.is-collapsed .history-head {
+  flex-direction: column;
+}
+
+.icon-btn-plain {
+  color: var(--ink-2);
+}
+
+.icon-btn-plain:hover {
+  background: var(--paper-sunk);
+  color: var(--ink);
+}
+
+.history-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  overflow-y: auto;
+}
+
+.history-group {
+  display: grid;
+  /* minmax(0, 1fr) : sans ça la colonne s'élargit au titre entier et les « … » n'apparaissent jamais. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.history-group h2 {
+  font-size: var(--step--1);
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.history-group ul {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius);
+}
+
+.history-item:hover,
+.history-item.is-active {
+  background: var(--paper-sunk);
+}
+
+.history-item.is-active a {
+  font-weight: 700;
+}
+
+.history-item a {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  overflow: hidden;
+  color: var(--ink);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Les actions n'apparaissent qu'au survol, sauf sur la conversation ouverte et au clavier. */
+.history-item .icon-btn {
+  flex: none;
+  opacity: 0;
+}
+
+.history-item:hover .icon-btn,
+.history-item.is-active .icon-btn,
+.history-item .icon-btn:focus-visible {
+  opacity: 1;
+}
+
+.history-item .icon-btn-pin:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+@media (hover: none) {
+  .history-item .icon-btn {
+    opacity: 1;
+  }
 }
 
 .chat {
   display: flex;
   flex-direction: column;
-  min-height: min(72dvh, 760px);
+  /* Hauteur fixe (toute la place disponible) : seule la conversation défile, le champ de saisie reste visible. */
+  height: 100%;
+  min-height: 0;
   border: 1px solid var(--rule);
   border-radius: 10px;
   background: var(--paper-hi);
@@ -1482,6 +1718,7 @@ kbd {
 
 .transcript {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
@@ -1689,6 +1926,25 @@ kbd {
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1180px) {
+  /* Le contexte budget passe sous la conversation : la page redevient défilante. */
+  .chat-grid {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .chat-grid > .aside {
+    grid-column: 2;
+    max-height: none;
+  }
+  .assistant-page {
+    height: auto;
+    min-height: 0;
+  }
+  .assistant-page .chat-grid {
+    align-items: start;
+  }
+  .chat,
+  .chat-history {
+    height: min(72dvh, 760px);
+  }
 }
 
 @media (max-width: 1080px) {
@@ -1700,6 +1956,18 @@ kbd {
   }
   .plate {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .chat-grid > .aside {
+    grid-column: auto;
+  }
+  /* Une seule colonne : l'historique prend toute la largeur, réduit il devient une barre. */
+  .chat-history {
+    width: auto !important;
+    height: auto;
+    max-height: 40dvh;
+  }
+  .chat-history.is-collapsed .history-head {
+    flex-direction: row;
   }
 }
 
@@ -1891,12 +2159,33 @@ kbd {
     display: none;
   }
 
+  .wish-table tbody tr,
+  .wish-table .add-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name name"
+      "prio amount"
+      "fit actions";
+  }
+
+  .wish-table td:nth-child(1) { grid-area: name; display: block !important; }
+  .wish-table td:nth-child(2) { grid-area: prio; }
+  .wish-table td:nth-child(3) { grid-area: amount; width: 8rem; }
+  .wish-table td:nth-child(4) { grid-area: fit; }
+  .wish-table td:nth-child(5) { grid-area: actions; }
+  .wish-table .add-row td:nth-child(4) { display: none; }
+
+  .wish-table .add-row td:nth-child(5) {
+    grid-column: 1 / -1;
+  }
+
   .fixed-table .add-row .row-actions,
   .fixed-table .add-row .btn {
     width: 100%;
   }
 
-  .toast {
+  .toast,
+  .toast-stack {
     bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   }
 

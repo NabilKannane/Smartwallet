@@ -8,9 +8,24 @@ vi.mock("./db", () => ({
   updateFixedItem: vi.fn(),
   removeFixedItem: vi.fn(),
   setSetting: vi.fn(),
+  insertWish: vi.fn(),
+  updateWish: vi.fn(),
+  removeWish: vi.fn(),
+  setConversationPinned: vi.fn(),
+  removeConversation: vi.fn(),
 }));
 
-import { addFixed, addTransaction, editFixed, saveDevise, saveSalary } from "./actions";
+import {
+  addFixed,
+  addTransaction,
+  addWish,
+  deleteConversation,
+  editFixed,
+  editWish,
+  pinConversation,
+  saveDevise,
+  saveSalary,
+} from "./actions";
 import * as db from "./db";
 
 function form(fields: Record<string, string>): FormData {
@@ -105,5 +120,57 @@ describe("charges fixes", () => {
     const res = await editFixed(null, form({ ...ok, id }));
     expect(res).toEqual({ ok: false, error: "Charge introuvable : recharge la page." });
     expect(db.updateFixedItem).not.toHaveBeenCalled();
+  });
+});
+
+describe("wishlist", () => {
+  const ok = { nom: "  Vélo ", prix: "1 499,999", priorite: "Haute", note: "  " };
+
+  it("ajoute un achat prévu, prix arrondi et note vide en null", async () => {
+    expect(await addWish(null, form(ok))).toEqual({ ok: true });
+    expect(db.insertWish).toHaveBeenCalledWith("Vélo", 1500, "Haute", null);
+  });
+
+  it.each([
+    [{ nom: "" }, "Donne un nom à cet achat."],
+    [{ prix: "0" }, "Le prix doit être supérieur à 0."],
+    [{ prix: "abc" }, "Le prix doit être supérieur à 0."],
+    [{ priorite: "Urgente" }, "Choisis une priorité."],
+  ])("refuse %o", async (patch, error) => {
+    expect(await addWish(null, form({ ...ok, ...patch }))).toEqual({ ok: false, error });
+    expect(db.insertWish).not.toHaveBeenCalled();
+  });
+
+  it("modifie un achat existant", async () => {
+    expect(await editWish(null, form({ ...ok, id: "3", note: "Rouge" }))).toEqual({ ok: true });
+    expect(db.updateWish).toHaveBeenCalledWith(3, "Vélo", 1500, "Haute", "Rouge");
+  });
+
+  it("refuse un id invalide", async () => {
+    expect(await editWish(null, form({ ...ok, id: "x" }))).toEqual({
+      ok: false,
+      error: "Achat introuvable : recharge la page.",
+    });
+    expect(db.updateWish).not.toHaveBeenCalled();
+  });
+});
+
+describe("conversations", () => {
+  const id = "3f2b8c1e-9a4d-4e7b-8c2f-1a2b3c4d5e6f";
+
+  it("épingle, désépingle et supprime une conversation", async () => {
+    await pinConversation(id, true);
+    expect(db.setConversationPinned).toHaveBeenCalledWith(id, true);
+    await pinConversation(id, false);
+    expect(db.setConversationPinned).toHaveBeenCalledWith(id, false);
+    await deleteConversation(id);
+    expect(db.removeConversation).toHaveBeenCalledWith(id);
+  });
+
+  it("ignore un identifiant invalide", async () => {
+    await pinConversation("web-abc", true);
+    await deleteConversation("");
+    expect(db.setConversationPinned).not.toHaveBeenCalled();
+    expect(db.removeConversation).not.toHaveBeenCalled();
   });
 });

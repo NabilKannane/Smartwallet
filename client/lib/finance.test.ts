@@ -1,15 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  actionMessage,
   computeMonth,
+  conversationTitle,
   countsInReste,
   daysInMonth,
   extractVerdict,
   formatContext,
+  isConversationId,
   MASQUE,
   money,
   moneyOr,
   monthRange,
+  parseActions,
   parseDevise,
   parseMonth,
   shiftMonth,
@@ -44,6 +48,46 @@ describe("extractVerdict", () => {
     "",
   ])("ne donne aucun verdict pour %j", (reply) => {
     expect(extractVerdict(reply)).toBeNull();
+  });
+});
+
+describe("actions de l'assistant", () => {
+  it("garde les actions valides et ignore le reste", () => {
+    expect(
+      parseActions([
+        { type: "add", target: "wishlist", label: "  Vélo " },
+        { type: "drop", target: "wishlist", label: "x" },
+        { type: "delete", target: "transactions", label: "x" },
+        { type: "update", target: "wishlist" },
+        null,
+      ]),
+    ).toEqual([
+      { type: "add", target: "wishlist", label: "Vélo" },
+      { type: "update", target: "wishlist", label: "" },
+    ]);
+    expect(parseActions(undefined)).toEqual([]);
+  });
+
+  it("formule la notification", () => {
+    expect(actionMessage({ type: "add", target: "wishlist", label: "Vélo" })).toBe("« Vélo » ajouté à ta wishlist");
+    expect(actionMessage({ type: "update", target: "wishlist", label: "Vélo" })).toBe("« Vélo » modifié dans ta wishlist");
+    expect(actionMessage({ type: "delete", target: "wishlist", label: "" })).toBe("Un article retiré de ta wishlist");
+  });
+});
+
+describe("conversations", () => {
+  it("n'accepte que des UUID comme identifiant", () => {
+    expect(isConversationId("3f2b8c1e-9a4d-4e7b-8c2f-1a2b3c4d5e6f")).toBe(true);
+    expect(isConversationId("web-abc123")).toBe(false);
+    expect(isConversationId("' OR 1=1 --")).toBe(false);
+    expect(isConversationId(undefined)).toBe(false);
+  });
+
+  it("titre : première question sur une ligne, coupée à 60 caractères", () => {
+    expect(conversationTitle("  Je peux acheter\n un vélo ?  ")).toBe("Je peux acheter un vélo ?");
+    const t = conversationTitle("a".repeat(100));
+    expect(t).toHaveLength(60);
+    expect(t.endsWith("…")).toBe(true);
   });
 });
 
@@ -177,6 +221,22 @@ describe("formatContext", () => {
 
   it("utilise l'euro par défaut", () => {
     expect(formatContext(8000, fixed, month)).toContain("Salaire mensuel net : 8000.00 €");
+  });
+
+  it("transmet la wishlist à l'assistant", () => {
+    const wishlist = [
+      { nom: "Vélo", prix: 1500, priorite: "Haute", note: "électrique" },
+      { nom: "Casque", prix: 300, priorite: "Basse", note: null },
+    ];
+    const ctx = formatContext(8000, fixed, month, "MAD", wishlist);
+    expect(ctx).toContain("Achats prévus (wishlist) :");
+    expect(ctx).toContain("  - Vélo : 1500.00 DH (priorité haute) — électrique");
+    expect(ctx).toContain("  - Casque : 300.00 DH (priorité basse)");
+    expect(ctx).toContain("Total de la wishlist : 1800.00 DH");
+  });
+
+  it("n'ajoute rien quand la wishlist est vide", () => {
+    expect(formatContext(8000, fixed, month, "MAD", [])).not.toContain("wishlist");
   });
 
   it("signale l'absence de charges fixes", () => {

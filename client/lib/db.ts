@@ -2,7 +2,7 @@ import "server-only";
 
 import { neon } from "@neondatabase/serverless";
 
-import { parseDevise, type Devise } from "./finance";
+import { parseDevise, type Devise, type Verdict } from "./finance";
 
 /** Base Postgres hébergée sur Neon. Même schéma que l'ancienne base SQLite de l'app Streamlit. */
 if (!process.env.DATABASE_URL) {
@@ -34,9 +34,26 @@ async function createSchema() {
       montant DOUBLE PRECISION NOT NULL
     )`;
   await sql`
+    CREATE TABLE IF NOT EXISTS wishlist (
+      id SERIAL PRIMARY KEY,
+      nom TEXT NOT NULL,
+      prix DOUBLE PRECISION NOT NULL,
+      priorite TEXT NOT NULL,
+      note TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await sql`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
+    )`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id TEXT PRIMARY KEY,
+      titre TEXT NOT NULL,
+      pinned BOOLEAN NOT NULL DEFAULT false,
+      messages JSONB NOT NULL DEFAULT '[]',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
 }
 
@@ -65,6 +82,26 @@ export interface FixedItem {
   nom: string;
   categorie: string;
   montant: number;
+}
+
+export interface WishItem {
+  id: number;
+  nom: string;
+  prix: number;
+  priorite: string;
+  note: string | null;
+}
+
+export type ChatMessage = { role: "user"; text: string } | { role: "assistant"; text: string; verdict: Verdict | null };
+
+export interface ConversationSummary {
+  id: string;
+  titre: string;
+  pinned: boolean;
+}
+
+export interface Conversation extends ConversationSummary {
+  messages: ChatMessage[];
 }
 
 // --- Transactions ---
@@ -128,6 +165,65 @@ export async function updateFixedItem(id: number, nom: string, categorie: string
 export async function removeFixedItem(id: number) {
   await ready();
   await sql`DELETE FROM fixed_items WHERE id = ${id}`;
+}
+
+// --- Wishlist ---
+
+export async function listWishlist(): Promise<WishItem[]> {
+  await ready();
+  return (await sql`
+    SELECT id, nom, prix, priorite, note FROM wishlist
+    ORDER BY CASE priorite WHEN 'Haute' THEN 0 WHEN 'Moyenne' THEN 1 ELSE 2 END, prix, id
+  `) as WishItem[];
+}
+
+export async function insertWish(nom: string, prix: number, priorite: string, note: string | null) {
+  await ready();
+  await sql`INSERT INTO wishlist (nom, prix, priorite, note) VALUES (${nom}, ${prix}, ${priorite}, ${note})`;
+}
+
+export async function updateWish(id: number, nom: string, prix: number, priorite: string, note: string | null) {
+  await ready();
+  await sql`UPDATE wishlist SET nom = ${nom}, prix = ${prix}, priorite = ${priorite}, note = ${note} WHERE id = ${id}`;
+}
+
+export async function removeWish(id: number) {
+  await ready();
+  await sql`DELETE FROM wishlist WHERE id = ${id}`;
+}
+
+// --- Conversations de l'assistant ---
+
+export async function listConversations(): Promise<ConversationSummary[]> {
+  await ready();
+  return (await sql`
+    SELECT id, titre, pinned FROM conversations ORDER BY updated_at DESC LIMIT 100
+  `) as ConversationSummary[];
+}
+
+export async function getConversation(id: string): Promise<Conversation | undefined> {
+  await ready();
+  const [row] = await sql`SELECT id, titre, pinned, messages FROM conversations WHERE id = ${id}`;
+  return row as Conversation | undefined;
+}
+
+/** Ajoute des messages à une conversation, en la créant si besoin. Le titre n'est fixé qu'à la création. */
+export async function appendMessages(id: string, titre: string, messages: ChatMessage[]) {
+  await ready();
+  await sql`
+    INSERT INTO conversations (id, titre, messages) VALUES (${id}, ${titre}, ${JSON.stringify(messages)}::jsonb)
+    ON CONFLICT (id) DO UPDATE SET messages = conversations.messages || EXCLUDED.messages, updated_at = now()
+  `;
+}
+
+export async function setConversationPinned(id: string, pinned: boolean) {
+  await ready();
+  await sql`UPDATE conversations SET pinned = ${pinned} WHERE id = ${id}`;
+}
+
+export async function removeConversation(id: string) {
+  await ready();
+  await sql`DELETE FROM conversations WHERE id = ${id}`;
 }
 
 // --- Paramètres ---

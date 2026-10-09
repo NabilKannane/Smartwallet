@@ -13,6 +13,8 @@ export const CATEGORIES_DEPENSE = [
 
 export const CATEGORIES_REVENU = ["Salaire", "Freelance", "Investissement", "Autres"] as const;
 
+export const PRIORITES = ["Haute", "Moyenne", "Basse"] as const;
+
 export const CATEGORIES_FIXES = ["Logement", "Facture", "Abonnement", "Transport", "Assurance", "Autres"] as const;
 
 /** Plaque d'identité fixe par catégorie : code court + couleur, identique dans toute l'app. */
@@ -228,6 +230,7 @@ export function formatContext(
   fixed: { nom: string; categorie: string; montant: number }[],
   month: MonthReste,
   devise: Devise = "EUR",
+  wishlist: { nom: string; prix: number; priorite: string; note: string | null }[] = [],
 ): string {
   const symbole = DEVISES[devise].symbole;
   const f = (n: number) => `${n.toFixed(2)} ${symbole}`;
@@ -245,6 +248,13 @@ export function formatContext(
   lines.push(`Autres revenus ce mois-ci : ${f(month.revenus)}`);
   lines.push(`Reste réel du mois à ce jour : ${f(month.reste)}`);
   if (month.joursRestants > 0) lines.push(`Jours restants dans le mois : ${month.joursRestants}`);
+  if (wishlist.length) {
+    lines.push("Achats prévus (wishlist) :");
+    for (const w of wishlist) {
+      lines.push(`  - ${w.nom} : ${f(w.prix)} (priorité ${w.priorite.toLowerCase()})${w.note ? ` — ${w.note}` : ""}`);
+    }
+    lines.push(`Total de la wishlist : ${f(wishlist.reduce((s, w) => s + w.prix, 0))}`);
+  }
   return lines.join("\n");
 }
 
@@ -289,4 +299,50 @@ export function extractVerdict(reply: string): Verdict | null {
     if (found.size === 1) return [...found][0];
   }
   return null;
+}
+
+/** Identifiant de conversation généré par l'app (UUID), aussi utilisé comme session_id de l'agent. */
+export function isConversationId(v: unknown): v is string {
+  return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+}
+
+/** Modification faite en base par l'assistant (outil d'écriture de l'agent). */
+export interface AgentAction {
+  type: "add" | "update" | "delete";
+  target: "wishlist";
+  label: string;
+}
+
+const ACTION_TYPES = new Set(["add", "update", "delete"]);
+const ACTION_TARGETS = new Set(["wishlist"]);
+
+/** Garde les actions bien formées renvoyées par le service IA ; ignore le reste. */
+export function parseActions(raw: unknown): AgentAction[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((a) =>
+    a && ACTION_TYPES.has(a.type) && ACTION_TARGETS.has(a.target)
+      ? [{ type: a.type, target: a.target, label: typeof a.label === "string" ? a.label.trim() : "" }]
+      : [],
+  );
+}
+
+const ACTION_VERB: Record<AgentAction["type"], string> = {
+  add: "ajouté à",
+  update: "modifié dans",
+  delete: "retiré de",
+};
+
+/** Texte de la notification : « « Vélo » ajouté à ta wishlist ». */
+export function actionMessage(a: AgentAction): string {
+  const what = a.label ? `« ${a.label} »` : "Un article";
+  return `${what} ${ACTION_VERB[a.type]} ta wishlist`;
+}
+
+/** Page où voir le résultat d'une action. */
+export const ACTION_HREF: Record<AgentAction["target"], string> = { wishlist: "/wishlist" };
+
+/** Titre d'une conversation : sa première question, sur une ligne, coupée à 60 caractères. */
+export function conversationTitle(question: string): string {
+  const t = question.replace(/\s+/g, " ").trim();
+  return t.length > 60 ? `${t.slice(0, 59).trimEnd()}…` : t;
 }

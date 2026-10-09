@@ -1,6 +1,6 @@
 "use client";
 
-import { ChartColumn, MessagesSquare, PanelLeftClose, PanelLeftOpen, ReceiptText, Wallet } from "lucide-react";
+import { ChartColumn, Heart, MessagesSquare, PanelLeftClose, PanelLeftOpen, ReceiptText, Wallet } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +14,7 @@ const LINKS = [
   { href: "/", label: "Ce mois", icon: ReceiptText },
   { href: "/historique", label: "Historique", icon: ChartColumn },
   { href: "/budget", label: "Budget", icon: Wallet },
+  { href: "/wishlist", label: "Wishlist", icon: Heart },
   { href: "/assistant", label: "Assistant", icon: MessagesSquare },
 ];
 

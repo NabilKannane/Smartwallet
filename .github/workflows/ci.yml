@@ -39,4 +39,4 @@ jobs:
           cache: pip
           cache-dependency-path: agent/requirements.txt
       - run: pip install -r requirements.txt
-      - run: python -m py_compile agent.py
+      - run: python -m py_compile *.py
