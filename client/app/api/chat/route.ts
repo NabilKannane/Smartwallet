@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 
 import { appendMessages, setSetting } from "@/lib/db";
-import { conversationTitle, extractVerdict, isConversationId } from "@/lib/finance";
+import { ACTION_HREF, conversationTitle, extractVerdict, isConversationId, parseActions } from "@/lib/finance";
 import { currentContext } from "@/lib/summary";
 
 const AI = process.env.AI_SERVICE_URL ?? "http://localhost:8000";
@@ -27,7 +27,9 @@ export async function POST(req: Request) {
   if (res.status === 503) return Response.json({ error: "busy" }, { status: 503 });
   if (!res.ok) return Response.json({ error: "upstream", status: res.status }, { status: 502 });
 
-  const { reply } = (await res.json()) as { reply: string };
+  const data = (await res.json()) as { reply: string; actions?: unknown };
+  const reply = data.reply;
+  const actions = parseActions(data.actions);
   const verdict = extractVerdict(reply);
   await appendMessages(sessionId, conversationTitle(question), [
     { role: "user", text: question },
@@ -37,6 +39,8 @@ export async function POST(req: Request) {
     await setSetting("dernier_avis", JSON.stringify({ question, verdict, at: new Date().toISOString() }));
     revalidatePath("/");
   }
+  // L'agent a modifié des données : les pages qui les affichent doivent être recalculées.
+  for (const target of new Set(actions.map((a) => a.target))) revalidatePath(ACTION_HREF[target]);
   revalidatePath("/assistant");
-  return Response.json({ reply, verdict });
+  return Response.json({ reply, verdict, actions });
 }

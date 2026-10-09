@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  actionMessage,
   computeMonth,
   conversationTitle,
   countsInReste,
@@ -12,6 +13,7 @@ import {
   money,
   moneyOr,
   monthRange,
+  parseActions,
   parseDevise,
   parseMonth,
   shiftMonth,
@@ -46,6 +48,30 @@ describe("extractVerdict", () => {
     "",
   ])("ne donne aucun verdict pour %j", (reply) => {
     expect(extractVerdict(reply)).toBeNull();
+  });
+});
+
+describe("actions de l'assistant", () => {
+  it("garde les actions valides et ignore le reste", () => {
+    expect(
+      parseActions([
+        { type: "add", target: "wishlist", label: "  Vélo " },
+        { type: "drop", target: "wishlist", label: "x" },
+        { type: "delete", target: "transactions", label: "x" },
+        { type: "update", target: "wishlist" },
+        null,
+      ]),
+    ).toEqual([
+      { type: "add", target: "wishlist", label: "Vélo" },
+      { type: "update", target: "wishlist", label: "" },
+    ]);
+    expect(parseActions(undefined)).toEqual([]);
+  });
+
+  it("formule la notification", () => {
+    expect(actionMessage({ type: "add", target: "wishlist", label: "Vélo" })).toBe("« Vélo » ajouté à ta wishlist");
+    expect(actionMessage({ type: "update", target: "wishlist", label: "Vélo" })).toBe("« Vélo » modifié dans ta wishlist");
+    expect(actionMessage({ type: "delete", target: "wishlist", label: "" })).toBe("Un article retiré de ta wishlist");
   });
 });
 

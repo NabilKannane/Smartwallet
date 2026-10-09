@@ -6,9 +6,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 
 import type { ChatMessage } from "@/lib/db";
-import type { Verdict } from "@/lib/finance";
+import { ACTION_HREF, actionMessage, parseActions, type Verdict } from "@/lib/finance";
 
 import { useSymbole } from "./Currency";
+import { useToast } from "./Toast";
 
 type ErrorKind = "unreachable" | "busy" | "upstream";
 
@@ -36,6 +37,7 @@ export function Chat({
   initialQuestion?: string;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [msgs, setMsgs] = useState<Msg[]>(initialMessages);
   const symbole = useSymbole();
   const [draft, setDraft] = useState(initialQuestion);
@@ -70,6 +72,9 @@ export function Chat({
           setMsgs((m) => [...m, { role: "error", kind: errorKind(data.error), question: q }]);
         } else {
           setMsgs((m) => [...m, { role: "assistant", text: data.reply, verdict: data.verdict }]);
+          for (const a of parseActions(data.actions)) {
+            toast({ message: actionMessage(a), action: { label: "Voir", href: ACTION_HREF[a.target] } });
+          }
           // L'échange est enregistré : on fixe la conversation dans l'URL et on met l'historique à jour.
           router.replace(`/assistant?c=${sessionId}`, { scroll: false });
         }
@@ -80,7 +85,7 @@ export function Chat({
         inputRef.current?.focus();
       }
     },
-    [busy, sessionId, router],
+    [busy, sessionId, router, toast],
   );
 
   return (

@@ -306,6 +306,41 @@ export function isConversationId(v: unknown): v is string {
   return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 }
 
+/** Modification faite en base par l'assistant (outil d'écriture de l'agent). */
+export interface AgentAction {
+  type: "add" | "update" | "delete";
+  target: "wishlist";
+  label: string;
+}
+
+const ACTION_TYPES = new Set(["add", "update", "delete"]);
+const ACTION_TARGETS = new Set(["wishlist"]);
+
+/** Garde les actions bien formées renvoyées par le service IA ; ignore le reste. */
+export function parseActions(raw: unknown): AgentAction[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((a) =>
+    a && ACTION_TYPES.has(a.type) && ACTION_TARGETS.has(a.target)
+      ? [{ type: a.type, target: a.target, label: typeof a.label === "string" ? a.label.trim() : "" }]
+      : [],
+  );
+}
+
+const ACTION_VERB: Record<AgentAction["type"], string> = {
+  add: "ajouté à",
+  update: "modifié dans",
+  delete: "retiré de",
+};
+
+/** Texte de la notification : « « Vélo » ajouté à ta wishlist ». */
+export function actionMessage(a: AgentAction): string {
+  const what = a.label ? `« ${a.label} »` : "Un article";
+  return `${what} ${ACTION_VERB[a.type]} ta wishlist`;
+}
+
+/** Page où voir le résultat d'une action. */
+export const ACTION_HREF: Record<AgentAction["target"], string> = { wishlist: "/wishlist" };
+
 /** Titre d'une conversation : sa première question, sur une ligne, coupée à 60 caractères. */
 export function conversationTitle(question: string): string {
   const t = question.replace(/\s+/g, " ").trim();
