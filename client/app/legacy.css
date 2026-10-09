@@ -1634,6 +1634,8 @@ kbd {
 }
 
 .history-item:hover .icon-btn,
+  /* minmax(0, 1fr) : sans ça la colonne s'élargit au titre entier et les « … » n'apparaissent jamais. */
+  grid-template-columns: minmax(0, 1fr);
 .history-item.is-active .icon-btn,
 .history-item .icon-btn:focus-visible {
   opacity: 1;
@@ -1646,6 +1648,7 @@ kbd {
 
 @media (hover: none) {
   .history-item .icon-btn {
+  grid-template-columns: minmax(0, 1fr);
     opacity: 1;
   }
 }
