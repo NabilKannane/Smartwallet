@@ -1090,6 +1090,58 @@ kbd {
   }
 }
 
+/* ---------- Notifications (components/Toast.tsx) ---------- */
+
+.toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: max(var(--space-5), env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-4));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast-stack .toast {
+  position: static;
+  gap: var(--space-3);
+  padding: 8px 8px 8px 14px;
+  transform: none;
+  pointer-events: auto;
+  /* Entrée, sortie et réempilement animés par Motion (components/Toast.tsx). */
+  animation: none;
+}
+
+.toast-stack .toast-icon {
+  flex: none;
+  color: var(--vfd);
+}
+
+.toast-stack .toast a {
+  flex: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--vfd);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.toast-stack .toast a:hover {
+  background: var(--plate-2);
+}
+
+.toast-stack .toast .toast-close {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  color: var(--rail-muted);
+}
+
 /* ---------- Historique ---------- */
 
 .filters {
@@ -1582,6 +1634,8 @@ kbd {
 
 .history-group {
   display: grid;
+  /* minmax(0, 1fr) : sans ça la colonne s'élargit au titre entier et les « … » n'apparaissent jamais. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
 }
 
@@ -1594,6 +1648,7 @@ kbd {
 
 .history-group ul {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
   margin: 0;
   padding: 0;
@@ -1634,8 +1689,6 @@ kbd {
 }
 
 .history-item:hover .icon-btn,
-  /* minmax(0, 1fr) : sans ça la colonne s'élargit au titre entier et les « … » n'apparaissent jamais. */
-  grid-template-columns: minmax(0, 1fr);
 .history-item.is-active .icon-btn,
 .history-item .icon-btn:focus-visible {
   opacity: 1;
@@ -1648,7 +1701,6 @@ kbd {
 
 @media (hover: none) {
   .history-item .icon-btn {
-  grid-template-columns: minmax(0, 1fr);
     opacity: 1;
   }
 }
@@ -2132,7 +2184,8 @@ kbd {
     width: 100%;
   }
 
-  .toast {
+  .toast,
+  .toast-stack {
     bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   }
 

@@ -3,6 +3,7 @@ import { Archivo, Martian_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 
 import { DeviseProvider } from "@/components/Currency";
+import { ToastProvider } from "@/components/Toast";
 import { Rail } from "@/components/Rail";
 import { getDevise } from "@/lib/db";
 import { isMasque } from "@/lib/masque";
@@ -38,10 +39,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="fr" className={`${archivo.variable} ${martian.variable}`}>
       <body>
         <DeviseProvider devise={devise}>
-          <div className="shell">
-            <Rail reste={salaire > 0 ? month.reste : null} initialCollapsed={railCollapsed} masque={masque} />
-            <main className="main">{children}</main>
-          </div>
+          <ToastProvider>
+            <div className="shell">
+              <Rail reste={salaire > 0 ? month.reste : null} initialCollapsed={railCollapsed} masque={masque} />
+              <main className="main">{children}</main>
+            </div>
+          </ToastProvider>
         </DeviseProvider>
       </body>
     </html>
