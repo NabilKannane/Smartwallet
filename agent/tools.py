@@ -3,6 +3,12 @@ from sqlalchemy import text
 
 from agent_db import db
 
+# Outils qui modifient la base : main.py les renvoie au client, qui affiche une notification.
+# nom de l'outil -> (type d'action, données touchées, argument qui sert de libellé)
+WRITE_TOOLS: dict[str, tuple[Literal["add", "update", "delete"], str, str]] = {
+    "ajouter_wishlist": ("add", "wishlist", "nom"),
+}
+
 
 def lister_wishlist() -> str:
     """Liste les articles de la wishlist de l'utilisateur (nom, prix, priorité)."""
@@ -33,8 +39,9 @@ def ajouter_wishlist(
         priorite: Haute, Moyenne ou Basse.
         note: remarque facultative.
     """
+    # Une exception marque l'appel en échec (tool_call_error) : main.py ne le notifie pas comme une action réussie.
     if prix <= 0:
-        return "Le prix doit être un nombre positif."
+        raise ValueError("Le prix doit être un nombre positif.")
     with db.db_engine.begin() as conn:
         conn.execute(
             text("INSERT INTO wishlist (nom, prix, priorite, note) VALUES (:nom, :prix, :priorite, :note)"),
