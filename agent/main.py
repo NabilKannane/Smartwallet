@@ -1,3 +1,4 @@
+import os
 from typing import Literal
 
 from agno.run.agent import RunOutput
@@ -46,6 +47,18 @@ def performed_actions(result: RunOutput) -> list[Action]:
 @app.get("/health")
 def health():
     return {"status": "ok", "db": "connected" if check_db() else "disconnected"}
+
+
+@app.get("/mcp-info")
+def mcp_info():
+    """Adresse du connecteur MCP et outils de l'agent, pour la page MCP du client."""
+    base = os.getenv("AGENTOS_URL", "").rstrip("/")
+    tools = [
+        {"name": t.__name__, "description": (t.__doc__ or "").strip().splitlines()[0]}
+        for t in agent.tools or []
+        if callable(t)
+    ]
+    return {"url": f"{base}/mcp" if base else None, "tools": tools}
 
 
 @app.post("/chat", response_model=ChatResponse)
