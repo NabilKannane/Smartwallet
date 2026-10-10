@@ -4,7 +4,7 @@ from agno.models.google import Gemini
 
 
 from agent_db import db, check_db  # noqa: F401 (check_db réexporté pour main.py)
-from tools import lister_wishlist, ajouter_wishlist, modifier_wishlist, supprimer_wishlist
+from tools import lister_wishlist, ajouter_wishlist, modifier_wishlist, supprimer_wishlist, voir_solde, lister_charges_fixes
 
 # Instructions pour l'agent
 agent_instruction = [
@@ -26,7 +26,7 @@ agent = Agent(
     instructions=agent_instruction,
     markdown=True,
     db=db,
-    tools= [lister_wishlist, ajouter_wishlist, modifier_wishlist, supprimer_wishlist],
+    tools= [lister_wishlist, ajouter_wishlist, modifier_wishlist, supprimer_wishlist, voir_solde, lister_charges_fixes],
     add_history_to_context=True,
     add_datetime_to_context=True,
 )

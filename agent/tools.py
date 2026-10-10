@@ -1,3 +1,5 @@
+import calendar
+from datetime import date
 from typing import Literal
 from sqlalchemy import text
 
@@ -114,3 +116,60 @@ def supprimer_wishlist(nom: str) -> str:
             raise ValueError(f"Plusieurs articles s'appellent « {nom} » : précise lequel supprimer.")
         conn.execute(text("DELETE FROM wishlist WHERE id = :id"), {"id": ids[0]})
     return f"{nom} a été supprimé de la wishlist."
+
+### Voir le solde actuel de l'utilisateur
+SYMBOLES = {"MAD": "DH", "EUR": "€", "USD": "$"}
+
+
+def voir_solde() -> str:
+    """Donne le reste du mois en cours (après charges fixes et dépenses) et les jours restants."""
+    today = date.today()
+    mois = today.strftime("%Y-%m")
+    with db.db_engine.connect() as conn:
+        settings = dict(
+            conn.execute(text("SELECT key, value FROM settings WHERE key IN ('salaire_mensuel', 'devise')")).all()
+        )
+        charges = conn.execute(text("SELECT COALESCE(SUM(montant), 0) FROM fixed_items")).scalar()
+        # Le salaire est déjà porté par le réglage : on ne compte pas les transactions « Salaire ».
+        tx = conn.execute(
+            text(
+                "SELECT "
+                "COALESCE(SUM(montant) FILTER (WHERE type = 'Revenu' AND categorie <> 'Salaire'), 0) AS revenus, "
+                "COALESCE(SUM(montant) FILTER (WHERE type = 'Dépense'), 0) AS depenses "
+                "FROM transactions WHERE date LIKE :mois"
+            ),
+            {"mois": f"{mois}-%"},
+        ).one()
+
+    try:
+        salaire = float(settings.get("salaire_mensuel") or 0)
+    except ValueError:
+        salaire = 0.0
+    symbole = SYMBOLES.get(settings.get("devise"), "€")
+    reste = salaire - charges + tx.revenus - tx.depenses
+    jours = calendar.monthrange(today.year, today.month)[1] - today.day + 1
+    f = lambda n: f"{n:.2f} {symbole}"
+
+    return "\n".join([
+        f"Total charges fixes : {f(charges)}",
+        f"Autres revenus ce mois-ci : {f(tx.revenus)}",
+        f"Dépenses variables ce mois-ci : {f(tx.depenses)}",
+        f"Reste réel du mois à ce jour : {f(reste)}",
+        f"Jours restants dans le mois : {jours}",
+    ])
+
+
+### Charges fixes mensuelles
+def lister_charges_fixes() -> str:
+    """Liste les charges fixes mensuelles de l'utilisateur (nom, catégorie, montant) et leur total."""
+    with db.db_engine.connect() as conn:
+        rows = conn.execute(text("SELECT nom, categorie, montant FROM fixed_items ORDER BY categorie, nom")).fetchall()
+        devise = conn.execute(text("SELECT value FROM settings WHERE key = 'devise'")).scalar()
+
+    if not rows:
+        return "Aucune charge fixe renseignée."
+    symbole = SYMBOLES.get(devise, "€")
+    lines = [f"{r.nom} ({r.categorie}) - {r.montant:.2f} {symbole}" for r in rows]
+    lines.append(f"Total charges fixes : {sum(r.montant for r in rows):.2f} {symbole}")
+    return "\n".join(lines)
+
