@@ -254,7 +254,10 @@ p {
   outline-color: var(--vfd);
 }
 
-.rail-readout-wrap {
+.rail-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   margin-top: auto;
 }
 
@@ -2145,9 +2148,17 @@ kbd {
   }
 
   .nav {
-    flex: 1;
+    flex: 5;
     flex-direction: row;
     justify-content: space-around;
+  }
+
+  .rail-foot {
+    display: contents;
+  }
+
+  .nav-foot {
+    flex: 1;
   }
 
   .nav a {

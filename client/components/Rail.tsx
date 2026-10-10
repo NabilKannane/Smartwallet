@@ -8,15 +8,25 @@ import { useState } from "react";
 
 import { moneyOr } from "@/lib/finance";
 
+import { McpLogo } from "./BrandLogos";
 import { Cur } from "./Currency";
 
-const LINKS = [
+interface NavLink {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; "aria-hidden"?: boolean }>;
+}
+
+const LINKS: NavLink[] = [
   { href: "/", label: "Ce mois", icon: ReceiptText },
   { href: "/historique", label: "Historique", icon: ChartColumn },
   { href: "/budget", label: "Budget", icon: Wallet },
   { href: "/wishlist", label: "Wishlist", icon: Heart },
   { href: "/assistant", label: "Assistant", icon: MessagesSquare },
 ];
+
+// En bas du menu, au-dessus du « Reste ce mois ».
+const FOOT_LINKS: NavLink[] = [{ href: "/mcp", label: "MCP", icon: McpLogo }];
 
 // Cookie lu par app/layout.tsx (même nom) : le serveur rend directement le bon état, sans flash.
 const RAIL_COOKIE = "sw-rail";
@@ -34,6 +44,18 @@ export function Rail({ reste, initialCollapsed, masque }: { reste: number | null
     const next = !collapsed;
     setCollapsed(next);
     document.cookie = `${RAIL_COOKIE}=${next ? "collapsed" : "open"}; path=/; max-age=31536000; samesite=lax`;
+  }
+
+  function renderLink({ href, label, icon: Icon }: NavLink) {
+    const active = href === "/" ? onHome : pathname.startsWith(href);
+    return (
+      <Link key={href} href={href} aria-current={active ? "page" : undefined} title={collapsed ? label : undefined}>
+        <Icon size={18} strokeWidth={2} aria-hidden />
+        <motion.span className="nav-label" initial={false} animate={{ opacity: collapsed ? 0 : 1 }} transition={fade}>
+          {label}
+        </motion.span>
+      </Link>
+    );
   }
 
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
@@ -69,40 +91,31 @@ export function Rail({ reste, initialCollapsed, masque }: { reste: number | null
         </div>
 
         <nav className="nav" aria-label="Navigation principale">
-          {LINKS.map(({ href, label, icon: Icon }) => {
-            const active = href === "/" ? onHome : pathname.startsWith(href);
-            return (
-              <Link key={href} href={href} aria-current={active ? "page" : undefined} title={collapsed ? label : undefined}>
-                <Icon size={18} strokeWidth={2} aria-hidden />
-                <motion.span
-                  className="nav-label"
-                  initial={false}
-                  animate={{ opacity: collapsed ? 0 : 1 }}
-                  transition={fade}
-                >
-                  {label}
-                </motion.span>
-              </Link>
-            );
-          })}
+          {LINKS.map(renderLink)}
         </nav>
 
-        <AnimatePresence initial={false}>
-          {!collapsed && !onHome && reste !== null && (
-            <motion.div
-              key="readout"
-              className="rail-readout-wrap"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8, transition: fade }}
-            >
-              <Link href="/" className={`rail-readout${!masque && reste < 0 ? " is-negative" : ""}`}>
-                <span>Reste ce mois</span>
-                <span className="num">{moneyOr(masque, reste)} <Cur /></span>
-              </Link>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div className="rail-foot">
+          <nav className="nav nav-foot" aria-label="Intégrations">
+            {FOOT_LINKS.map(renderLink)}
+          </nav>
+
+          <AnimatePresence initial={false}>
+            {!collapsed && !onHome && reste !== null && (
+              <motion.div
+                key="readout"
+                className="rail-readout-wrap"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8, transition: fade }}
+              >
+                <Link href="/" className={`rail-readout${!masque && reste < 0 ? " is-negative" : ""}`}>
+                  <span>Reste ce mois</span>
+                  <span className="num">{moneyOr(masque, reste)} <Cur /></span>
+                </Link>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </motion.aside>
     </MotionConfig>
   );
