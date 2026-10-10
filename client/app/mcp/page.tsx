@@ -1,7 +1,9 @@
 import { ChevronDown } from "lucide-react";
 import type { Metadata } from "next";
+import { Fragment } from "react";
 
 import { Integrations, type Integration } from "@/components/Integrations";
+import type { McpClient } from "@/lib/finance";
 
 export const metadata: Metadata = { title: "MCP" };
 
@@ -10,6 +12,7 @@ const AI = process.env.AI_SERVICE_URL ?? "http://localhost:8000";
 interface McpInfo {
   url: string | null;
   tools: { name: string; description: string }[];
+  connected: Partial<Record<McpClient, boolean>>;
 }
 
 async function loadInfo(): Promise<McpInfo | null> {
@@ -42,8 +45,10 @@ const SECRET = (
 );
 
 function integrations(): Integration[] {
-  return [
+  // Les étapes passent en liste au composant client : React exige une clé sur chacune.
+  return withKeys([
     {
+      id: "claude",
       logo: "claude",
       name: "Claude",
       description: "Connecteur personnalisé sur claude.ai, Desktop et mobile.",
@@ -57,6 +62,7 @@ function integrations(): Integration[] {
       ],
     },
     {
+      id: "chatgpt",
       logo: "openai",
       name: "ChatGPT",
       description: "Connecteur en mode développeur sur ChatGPT.",
@@ -73,6 +79,7 @@ function integrations(): Integration[] {
       ],
     },
     {
+      id: "other",
       logo: "mcp",
       name: "Autre client",
       description: "Tout client compatible MCP distant avec OAuth.",
@@ -82,7 +89,11 @@ function integrations(): Integration[] {
         <>Sur la page de consentement, {SECRET}.</>,
       ],
     },
-  ];
+  ]);
+}
+
+function withKeys(items: Integration[]): Integration[] {
+  return items.map((it) => ({ ...it, steps: it.steps.map((s, i) => <Fragment key={i}>{s}</Fragment>) }));
 }
 
 export default async function Mcp() {
@@ -117,7 +128,7 @@ export default async function Mcp() {
         </p>
       )}
 
-      <Integrations items={integrations()} url={info?.url ?? null} />
+      <Integrations items={integrations()} url={info?.url ?? null} connected={info?.connected ?? {}} />
 
       <details className="slip context-slip mt-6">
         <summary>

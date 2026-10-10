@@ -341,6 +341,14 @@ export function actionMessage(a: AgentAction): string {
 /** Page où voir le résultat d'une action. */
 export const ACTION_HREF: Record<AgentAction["target"], string> = { wishlist: "/wishlist" };
 
+/** Clients MCP distingués par le service IA (même liste que MCP_CLIENTS dans agent/main.py, plus « other »). */
+export const MCP_CLIENTS = ["claude", "chatgpt", "other"] as const;
+export type McpClient = (typeof MCP_CLIENTS)[number];
+
+export function isMcpClient(v: unknown): v is McpClient {
+  return typeof v === "string" && (MCP_CLIENTS as readonly string[]).includes(v);
+}
+
 /** Titre d'une conversation : sa première question, sur une ligne, coupée à 60 caractères. */
 export function conversationTitle(question: string): string {
   const t = question.replace(/\s+/g, " ").trim();

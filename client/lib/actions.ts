@@ -21,6 +21,7 @@ import {
   CATEGORIES_FIXES,
   CATEGORIES_REVENU,
   isConversationId,
+  isMcpClient,
   parseDevise,
   PRIORITES,
 } from "./finance";
@@ -162,4 +163,24 @@ export async function deleteConversation(id: string): Promise<void> {
   if (!isConversationId(id)) return;
   await removeConversation(id);
   revalidatePath("/assistant");
+}
+
+// --- Connexions MCP ---
+
+const AI = process.env.AI_SERVICE_URL ?? "http://localhost:8000";
+
+export async function disconnectMcpClient(client: string): Promise<ActionResult> {
+  if (!isMcpClient(client)) return { ok: false, error: "Client inconnu." };
+  try {
+    const res = await fetch(`${AI}/mcp-clients/${client}/disconnect`, {
+      method: "POST",
+      signal: AbortSignal.timeout(5000),
+      cache: "no-store",
+    });
+    if (!res.ok) return { ok: false, error: "Le service IA a refusé la déconnexion." };
+  } catch {
+    return { ok: false, error: "Service IA injoignable." };
+  }
+  revalidatePath("/mcp");
+  return { ok: true };
 }
