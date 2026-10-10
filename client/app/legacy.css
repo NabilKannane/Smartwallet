@@ -1456,6 +1456,13 @@ kbd {
   padding-top: var(--space-4);
 }
 
+.fixed-table tfoot th,
+.fixed-table tfoot td {
+  padding-top: var(--space-4);
+  border-top: 3px double var(--ink);
+  font-weight: 700;
+}
+
 .fixed-table .add-row .input,
 .fixed-table .add-row .select {
   background: var(--paper-hi);
