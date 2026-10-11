@@ -225,3 +225,9 @@ GitHub Actions (`.github/workflows/ci.yml`) type-checks, tests and builds the we
 - **Single user.** There is no user account system: every visitor shares the same budget, and the agent tools are not scoped to a user.
 - **Exposure through the tunnel.** While ngrok is running, only `/mcp` is protected by OAuth. `/chat`, `/mcp-info` and the disconnect route are reachable by anyone who knows the URL.
 - **Disconnecting from the client side** (in Claude or ChatGPT settings) is not reported to the server. The card keeps showing *Connecté* until the token expires (30 days at most), or until you click **Déconnecter** in the app.
+
+---
+
+<p align="center"><em>"A budget is telling your money where to go instead of wondering where it went."</em><br/>— Dave Ramsey</p>
+
+<p align="center">Designed &amp; developed by <a href="https://github.com/NabilKannane">Nabil Kannane</a></p>
