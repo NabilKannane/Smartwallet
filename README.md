@@ -219,3 +219,10 @@ npm test          # Vitest: finance rules, server actions, masking
 ```
 
 GitHub Actions (`.github/workflows/ci.yml`) type-checks, tests and builds the web app, and installs and compiles the AI service on every push and pull request.
+
+---
+
+<p align="center"><em>"A budget is telling your money where to go instead of wondering where it went."</em><br/>— Dave Ramsey</p>
+
+<p align="center">Designed &amp; developed by <a href="https://github.com/NabilKannane">Nabil Kannane</a></p>
+
