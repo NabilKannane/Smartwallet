@@ -219,9 +219,3 @@ npm test          # Vitest: finance rules, server actions, masking
 ```
 
 GitHub Actions (`.github/workflows/ci.yml`) type-checks, tests and builds the web app, and installs and compiles the AI service on every push and pull request.
-
-## Known limitations
-
-- **Single user.** There is no user account system: every visitor shares the same budget, and the agent tools are not scoped to a user.
-- **Exposure through the tunnel.** While ngrok is running, only `/mcp` is protected by OAuth. `/chat`, `/mcp-info` and the disconnect route are reachable by anyone who knows the URL.
-- **Disconnecting from the client side** (in Claude or ChatGPT settings) is not reported to the server. The card keeps showing *Connecté* until the token expires (30 days at most), or until you click **Déconnecter** in the app.
