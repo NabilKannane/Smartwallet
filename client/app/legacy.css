@@ -254,7 +254,10 @@ p {
   outline-color: var(--vfd);
 }
 
-.rail-readout-wrap {
+.rail-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   margin-top: auto;
 }
 
@@ -1456,6 +1459,13 @@ kbd {
   padding-top: var(--space-4);
 }
 
+.fixed-table tfoot th,
+.fixed-table tfoot td {
+  padding-top: var(--space-4);
+  border-top: 3px double var(--ink);
+  font-weight: 700;
+}
+
 .fixed-table .add-row .input,
 .fixed-table .add-row .select {
   background: var(--paper-hi);
@@ -1512,6 +1522,167 @@ kbd {
 
 .receipt-total .plate-sm.is-negative .num {
   color: var(--red);
+}
+
+/* ---------- MCP ---------- */
+
+.mcp-url {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.mcp-url code {
+  flex: 1;
+  min-width: 0;
+  padding: 10px var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-sunk);
+  font-family: var(--mono);
+  font-size: var(--step--1);
+  overflow-wrap: anywhere;
+}
+
+.integrations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-4);
+}
+
+.integration {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.integration-text {
+  flex: 1;
+}
+
+.integration-text h3 {
+  font-weight: 700;
+}
+
+.integration .btn {
+  width: 100%;
+}
+
+.integration-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.integration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.integration-actions .btn {
+  flex: 1 1 auto;
+  width: auto;
+}
+
+.integration-logo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: #fff;
+  color: #0d0d0d;
+}
+
+.integration-dialog {
+  width: min(560px, calc(100vw - 2 * var(--space-4)));
+  max-height: calc(100dvh - 2 * var(--space-6));
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper-hi);
+  color: var(--ink);
+  overflow-y: auto;
+}
+
+.integration-dialog::backdrop {
+  background: rgba(10, 20, 18, 0.5);
+}
+
+.integration-dialog[open] {
+  animation: dialog-in 200ms var(--ease-out);
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .integration-dialog[open] {
+    animation: none;
+  }
+}
+
+.integration-dialog-body {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.integration-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.integration-dialog-head h2 {
+  flex: 1;
+}
+
+.integration-dialog .mcp-url {
+  margin-top: 4px;
+}
+
+.mcp-steps {
+  display: grid;
+  gap: var(--space-2);
+  padding-left: 1.3em;
+  list-style: decimal;
+  color: var(--ink-2);
+}
+
+.mcp-steps code,
+.mcp-tools code {
+  font-family: var(--mono);
+  font-size: var(--step--1);
+}
+
+.mcp-tools {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.mcp-tools li {
+  display: grid;
+  gap: 2px;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px dashed var(--rule);
+}
+
+.mcp-tools li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 /* ---------- Wishlist ---------- */
@@ -1997,9 +2168,17 @@ kbd {
   }
 
   .nav {
-    flex: 1;
+    flex: 5;
     flex-direction: row;
     justify-content: space-around;
+  }
+
+  .rail-foot {
+    display: contents;
+  }
+
+  .nav-foot {
+    flex: 1;
   }
 
   .nav a {

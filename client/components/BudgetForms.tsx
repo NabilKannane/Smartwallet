@@ -6,7 +6,7 @@ import { useActionState, useEffect, useRef, useState, useTransition } from "reac
 
 import { addFixed, deleteFixed, editFixed, saveDevise, saveSalary, type ActionResult } from "@/lib/actions";
 import type { FixedItem } from "@/lib/db";
-import { CATEGORIES_FIXES, DEVISES, MASQUE, type Devise } from "@/lib/finance";
+import { CATEGORIES_FIXES, DEVISES, MASQUE, moneyOr, type Devise } from "@/lib/finance";
 import { submitKeepingValues } from "@/lib/form";
 
 import { CategoryPlate } from "./CategoryPlate";
@@ -216,6 +216,8 @@ function AddFixedRow() {
 }
 
 export function FixedTable({ items, masque }: { items: FixedItem[]; masque: boolean }) {
+  const symbole = useSymbole();
+  const total = items.reduce((s, it) => s + it.montant, 0);
   return (
     <div className="table-scroll">
       <table className="fixed-table">
@@ -247,6 +249,19 @@ export function FixedTable({ items, masque }: { items: FixedItem[]; masque: bool
           ))}
           <AddFixedRow />
         </tbody>
+        {items.length > 0 && (
+          <tfoot>
+            <tr>
+              <th scope="row" colSpan={3}>
+                Total des charges fixes
+              </th>
+              <td className="num pr-4.5 text-right">
+                {moneyOr(masque, total)} {symbole}
+              </td>
+              <td />
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );

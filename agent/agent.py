@@ -1,11 +1,10 @@
 import os
-
 from agno.agent import Agent
-# from agno.models.google import Gemini
-from agno.models.lmstudio import LMStudio
+from agno.models.google import Gemini
+
 
 from agent_db import db, check_db  # noqa: F401 (check_db réexporté pour main.py)
-from tools import lister_wishlist, ajouter_wishlist
+from tools import lister_wishlist, ajouter_wishlist, modifier_wishlist, supprimer_wishlist, voir_solde, lister_charges_fixes
 
 # Instructions pour l'agent
 agent_instruction = [
@@ -16,20 +15,18 @@ agent_instruction = [
     "Termine toujours par une recommandation claire : Acheter / Attendre / Éviter, avec une justification courte basée sur les chiffres.",
     "Si une information essentielle manque pour juger, pose une question précise avant de conclure.",
     "Réponds en français, de façon concise et bienveillante, sans jargon inutile.",
-    "N'ajoute un article à la wishlist que si l'utilisateur le demande clairement."
+    "N'ajoute, ne modifie ou ne supprime un article de la wishlist que si l'utilisateur le demande clairement."
 ]
 
 # Création de l'agent avec le modèle Gemini et les instructions définies
 agent = Agent(
-    # Modèle local servi par LM Studio. Depuis Docker, localhost est le conteneur : on passe l'URL par l'env.
-    model=LMStudio(
-        id="qwen3-8b",
-        base_url=os.getenv("LMSTUDIO_BASE_URL", "http://127.0.0.1:1234/v1"),
-    ),
+    id="co-wallet",
+    name="CO-WALLET",
+    model=Gemini(id="gemini-3.5-flash"),
     instructions=agent_instruction,
     markdown=True,
     db=db,
-    tools= [lister_wishlist, ajouter_wishlist],
+    tools= [lister_wishlist, ajouter_wishlist, modifier_wishlist, supprimer_wishlist, voir_solde, lister_charges_fixes],
     add_history_to_context=True,
     add_datetime_to_context=True,
 )
